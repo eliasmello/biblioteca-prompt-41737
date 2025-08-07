@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, CheckCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -32,6 +33,8 @@ type SignupForm = z.infer<typeof signupSchema>;
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
@@ -54,15 +57,64 @@ export default function Auth() {
 
   const handleSignup = async (data: SignupForm) => {
     setIsSubmitting(true);
-    await signUp(data.email, data.password, data.name);
+    const { error } = await signUp(data.email, data.password, data.name);
     setIsSubmitting(false);
-    signupForm.reset();
+    
+    if (!error) {
+      setUserEmail(data.email);
+      setShowEmailConfirmation(true);
+      signupForm.reset();
+    }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (showEmailConfirmation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
+        <div className="w-full max-w-md">
+          <Card className="glass border-white/20">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 h-12 w-12 text-green-500">
+                <Mail className="h-full w-full" />
+              </div>
+              <CardTitle className="text-2xl font-bold">Confirme seu E-mail</CardTitle>
+              <CardDescription>
+                Enviamos um e-mail de confirmação para:
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="font-medium text-primary">{userEmail}</p>
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="font-medium">Próximos passos:</span>
+                </div>
+                <ol className="text-left text-sm text-blue-600 dark:text-blue-400 space-y-1">
+                  <li>1. Verifique sua caixa de entrada (e spam)</li>
+                  <li>2. Clique no link de confirmação</li>
+                  <li>3. Retorne aqui para fazer login</li>
+                </ol>
+              </div>
+              <Button 
+                onClick={() => {
+                  setShowEmailConfirmation(false);
+                  setUserEmail('');
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Voltar para Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

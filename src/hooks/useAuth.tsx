@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth event:', event, 'Session:', !!session);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -62,6 +65,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           setProfile(null);
           setLoading(false);
+        }
+
+        // Handle specific auth events
+        if (event === 'SIGNED_IN' && session?.user) {
+          toast({
+            title: "Login realizado com sucesso!",
+            description: "Redirecionando para o painel..."
+          });
+          
+          // Redirect to dashboard after successful login
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        }
+
+        if (event === 'SIGNED_UP' && !session?.user?.email_confirmed_at) {
+          toast({
+            title: "Cadastro realizado!",
+            description: "Por favor, verifique seu e-mail e clique no link de confirmação enviado para validar sua conta.",
+            variant: "default"
+          });
+        }
+
+        if (event === 'SIGNED_UP' && session?.user?.email_confirmed_at) {
+          toast({
+            title: "E-mail confirmado!",
+            description: "Sua conta foi validada. Faça o login para continuar."
+          });
         }
       }
     );
@@ -83,12 +114,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -105,10 +136,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: "destructive"
       });
-    } else {
+    } else if (data.user && !data.user.email_confirmed_at) {
       toast({
         title: "Cadastro realizado!",
-        description: "Verifique seu email para confirmar a conta."
+        description: "Por favor, verifique seu e-mail e clique no link de confirmação enviado para validar sua conta.",
+        variant: "default"
       });
     }
 
@@ -122,17 +154,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     if (error) {
-      toast({
-        title: "Erro no login",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo de volta."
-      });
+      if (error.message.includes('Email not confirmed')) {
+        toast({
+          title: "E-mail não confirmado",
+          description: "Por favor, verifique seu e-mail e clique no link de confirmação antes de fazer login.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Erro no login",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     }
+    // Success message will be handled by the auth state change listener
 
     return { error };
   };
