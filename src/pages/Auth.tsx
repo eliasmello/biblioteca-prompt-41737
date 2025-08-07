@@ -46,7 +46,7 @@ export default function Auth() {
 
   // Redirect if user is already authenticated
   if (user && !loading) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const handleLogin = async (data: LoginForm) => {
