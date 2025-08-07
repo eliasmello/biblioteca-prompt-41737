@@ -158,30 +158,104 @@ export const usePrompts = () => {
   const importPrompts = async (content: string) => {
     if (!user) return { error: 'User not authenticated' };
 
-    const lines = content.split('\n').filter(line => line.trim());
     const promptsToImport: Partial<Prompt>[] = [];
 
-    let currentPrompt = '';
-    for (const line of lines) {
-      if (line.includes('**[') && line.includes(']**') && currentPrompt) {
-        const parsed = parsePromptContent(currentPrompt);
-        promptsToImport.push({
-          ...parsed,
-          content: currentPrompt
-        });
-        currentPrompt = line;
-      } else {
-        currentPrompt += (currentPrompt ? '\n' : '') + line;
+    // Function to create a prompt object
+    const createPromptObject = (promptContent: string, index: number) => {
+      const parsed = parsePromptContent(promptContent);
+      return {
+        title: parsed.category 
+          ? `${parsed.category}${parsed.number ? ` #${parsed.number}` : ` #${index + 1}`}`
+          : `Prompt #${index + 1}`,
+        category: parsed.category || 'Geral',
+        subcategory: parsed.subcategory,
+        content: promptContent.trim(),
+        tags: [...(parsed.extractedTags?.style || []), ...(parsed.extractedTags?.subject || [])],
+        keywords: [],
+        styleTags: parsed.extractedTags?.style || [],
+        subjectTags: parsed.extractedTags?.subject || [],
+        number: parsed.number
+      };
+    };
+
+    // Multiple separation strategies
+    const separationStrategies = [
+      // Strategy 1: Look for numbered prompts (1., 2., etc.)
+      {
+        name: 'numbered',
+        pattern: /(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm,
+        split: (content: string) => {
+          const parts = content.split(/(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm);
+          return parts.filter(part => part.trim().length > 20); // Filter out very short parts
+        }
+      },
+      
+      // Strategy 2: Look for markdown-style headers
+      {
+        name: 'headers',
+        pattern: /(?:^|\n)#{1,6}\s+/gm,
+        split: (content: string) => {
+          const parts = content.split(/(?:^|\n)#{1,6}\s+/gm);
+          return parts.filter(part => part.trim().length > 20);
+        }
+      },
+      
+      // Strategy 3: Look for category markers **[Category]**
+      {
+        name: 'categories',
+        pattern: /\*\*\[.*?\]\*\*/gm,
+        split: (content: string) => {
+          const parts = content.split(/(?=\*\*\[.*?\]\*\*)/gm);
+          return parts.filter(part => part.trim().length > 20);
+        }
+      },
+      
+      // Strategy 4: Look for double line breaks (paragraph separation)
+      {
+        name: 'paragraphs',
+        pattern: /\n\s*\n/gm,
+        split: (content: string) => {
+          const parts = content.split(/\n\s*\n/gm);
+          return parts.filter(part => part.trim().length > 50); // Longer threshold for paragraphs
+        }
+      },
+      
+      // Strategy 5: Look for prompt-specific keywords
+      {
+        name: 'keywords',
+        pattern: /(?:^|\n)(?:prompt|scene|description|image|photo|picture|design)[:.]?\s*/gmi,
+        split: (content: string) => {
+          const parts = content.split(/(?:^|\n)(?:prompt|scene|description|image|photo|picture|design)[:.]?\s*/gmi);
+          return parts.filter(part => part.trim().length > 20);
+        }
+      }
+    ];
+
+    // Try each strategy and use the one that gives the best results
+    let bestStrategy = null;
+    let maxPrompts = 0;
+
+    for (const strategy of separationStrategies) {
+      const parts = strategy.split(content);
+      if (parts.length > maxPrompts && parts.length > 1) {
+        maxPrompts = parts.length;
+        bestStrategy = strategy;
       }
     }
 
-    // Process last prompt
-    if (currentPrompt) {
-      const parsed = parsePromptContent(currentPrompt);
-      promptsToImport.push({
-        ...parsed,
-        content: currentPrompt
+    if (bestStrategy && maxPrompts > 1) {
+      console.log(`Using strategy: ${bestStrategy.name}, found ${maxPrompts} prompts`);
+      const parts = bestStrategy.split(content);
+      
+      parts.forEach((part, index) => {
+        if (part.trim().length > 20) { // Only process substantial content
+          promptsToImport.push(createPromptObject(part, index));
+        }
       });
+    } else {
+      // Fallback: treat as single prompt
+      console.log('No clear separation found, treating as single prompt');
+      promptsToImport.push(createPromptObject(content, 0));
     }
 
     // Map to database format
