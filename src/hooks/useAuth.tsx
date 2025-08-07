@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }
 
-        // Login success toast removed to prevent repetitive notifications
+        // No login toasts - they cause repetitive notifications
       }
     );
 
