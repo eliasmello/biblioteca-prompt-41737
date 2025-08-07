@@ -64,22 +64,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile in background
-          setTimeout(async () => {
-            if (!mounted) return;
-            try {
-              const profileData = await fetchProfile(session.user.id);
-              if (mounted) {
-                setProfile(profileData as Profile);
-                setLoading(false);
-              }
-            } catch (error) {
-              console.error('Error fetching profile:', error);
-              if (mounted) {
-                setLoading(false);
-              }
+          // Set loading false immediately, fetch profile in background
+          setLoading(false);
+          
+          // Fetch profile in background without blocking UI
+          fetchProfile(session.user.id).then(profileData => {
+            if (mounted) {
+              setProfile(profileData as Profile);
             }
-          }, 100);
+          }).catch(error => {
+            console.error('Error fetching profile:', error);
+          });
         } else {
           setProfile(null);
           setLoading(false);
@@ -111,16 +106,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
-            const profileData = await fetchProfile(session.user.id);
+          // Set loading false immediately
+          setLoading(false);
+          
+          // Fetch profile in background
+          fetchProfile(session.user.id).then(profileData => {
             if (mounted) {
               setProfile(profileData as Profile);
-              setLoading(false);
             }
-          } catch (error) {
+          }).catch(error => {
             console.error('Error fetching profile on mount:', error);
-            if (mounted) setLoading(false);
-          }
+          });
         } else {
           if (mounted) setLoading(false);
         }
