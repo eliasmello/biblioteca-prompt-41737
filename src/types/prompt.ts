@@ -16,6 +16,7 @@ export interface Prompt {
   usageCount: number;
   createdAt: string;
   updatedAt: string;
+  previewImage?: string | null;
 }
 
 export interface ParsedPrompt {

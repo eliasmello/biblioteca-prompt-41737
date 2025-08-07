@@ -37,7 +37,8 @@ export const usePrompts = () => {
         isFavorite: prompt.is_favorite,
         usageCount: prompt.usage_count,
         createdAt: prompt.created_at,
-        updatedAt: prompt.updated_at
+        updatedAt: prompt.updated_at,
+        previewImage: (prompt as any).preview_image || null
       }));
       setPrompts(mappedPrompts);
     }
@@ -60,6 +61,7 @@ export const usePrompts = () => {
       keywords: [],
       style_tags: parsed.extractedTags?.style || [],
       subject_tags: parsed.extractedTags?.subject || [],
+      preview_image: promptData.previewImage,
       created_by: user.id,
       is_favorite: false,
       usage_count: 0
@@ -102,6 +104,7 @@ export const usePrompts = () => {
     if (promptData.number !== undefined) dbUpdates.number = promptData.number;
     if (promptData.isFavorite !== undefined) dbUpdates.is_favorite = promptData.isFavorite;
     if (promptData.usageCount !== undefined) dbUpdates.usage_count = promptData.usageCount;
+    if (promptData.previewImage !== undefined) dbUpdates.preview_image = promptData.previewImage;
     
     // Always update the updated_by field
     dbUpdates.updated_by = user.id;
