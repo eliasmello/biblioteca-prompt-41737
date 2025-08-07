@@ -16,7 +16,7 @@ interface PromptCardProps {
 }
 
 export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
   const { generateImage, isLoading: imageLoading, error } = useImageGeneration();
 
   const cleanPromptContent = (content: string) => {
@@ -25,9 +25,16 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
   };
 
   useEffect(() => {
+    // First, try to use the saved image
+    if (prompt.previewImage) {
+      setPreviewImage(prompt.previewImage);
+      return;
+    }
+
+    // Only generate a new image if there's no saved image and we haven't tried yet
     const generatePreview = async () => {
       const cleanContent = cleanPromptContent(prompt.content);
-      if (cleanContent && !previewImage && !imageLoading && !error) {
+      if (cleanContent && !previewImage && !imageLoading && !error && !prompt.previewImage) {
         const imageUrl = await generateImage(cleanContent);
         if (imageUrl) {
           setPreviewImage(imageUrl);
@@ -36,7 +43,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
     };
 
     generatePreview();
-  }, [prompt.content, generateImage, previewImage, imageLoading, error]);
+  }, [prompt.content, prompt.previewImage, generateImage, previewImage, imageLoading, error]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
