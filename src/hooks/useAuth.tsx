@@ -79,21 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             window.location.href = '/dashboard';
           }, 1500);
         }
-
-        if (event === 'SIGNED_UP' && !session?.user?.email_confirmed_at) {
-          toast({
-            title: "Cadastro realizado!",
-            description: "Por favor, verifique seu e-mail e clique no link de confirmação enviado para validar sua conta.",
-            variant: "default"
-          });
-        }
-
-        if (event === 'SIGNED_UP' && session?.user?.email_confirmed_at) {
-          toast({
-            title: "E-mail confirmado!",
-            description: "Sua conta foi validada. Faça o login para continuar."
-          });
-        }
       }
     );
 
