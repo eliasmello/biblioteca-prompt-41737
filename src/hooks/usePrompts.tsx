@@ -170,7 +170,7 @@ export const usePrompts = () => {
         promptsToImport.push({
           ...parsed,
           content: currentPrompt,
-          created_by: user.id
+          createdBy: user.id
         });
         currentPrompt = line;
       } else {
@@ -184,7 +184,7 @@ export const usePrompts = () => {
       promptsToImport.push({
         ...parsed,
         content: currentPrompt,
-        created_by: user.id
+        createdBy: user.id
       });
     }
 
