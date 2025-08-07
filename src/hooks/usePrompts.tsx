@@ -91,25 +91,24 @@ export const usePrompts = () => {
   const updatePrompt = async (id: string, promptData: Partial<Prompt>) => {
     if (!user) return { error: 'User not authenticated' };
 
-    const parsed = parsePromptContent(promptData.content || '');
+    // Map frontend fields to database fields
+    const dbUpdates: any = {};
     
-    const dbPrompt = {
-      title: promptData.title,
-      category: parsed.category || promptData.category,
-      subcategory: parsed.subcategory || promptData.subcategory,
-      content: promptData.content,
-      description: promptData.description,
-      number: parsed.number || promptData.number,
-      tags: [...(parsed.extractedTags?.style || []), ...(parsed.extractedTags?.subject || [])],
-      keywords: [],
-      style_tags: parsed.extractedTags?.style || [],
-      subject_tags: parsed.extractedTags?.subject || [],
-      updated_by: user.id
-    };
+    if (promptData.title !== undefined) dbUpdates.title = promptData.title;
+    if (promptData.category !== undefined) dbUpdates.category = promptData.category;
+    if (promptData.subcategory !== undefined) dbUpdates.subcategory = promptData.subcategory;
+    if (promptData.content !== undefined) dbUpdates.content = promptData.content;
+    if (promptData.description !== undefined) dbUpdates.description = promptData.description;
+    if (promptData.number !== undefined) dbUpdates.number = promptData.number;
+    if (promptData.isFavorite !== undefined) dbUpdates.is_favorite = promptData.isFavorite;
+    if (promptData.usageCount !== undefined) dbUpdates.usage_count = promptData.usageCount;
+    
+    // Always update the updated_by field
+    dbUpdates.updated_by = user.id;
     
     const { data, error } = await supabase
       .from('prompts')
-      .update(dbPrompt)
+      .update(dbUpdates)
       .eq('id', id)
       .select()
       .single();
@@ -165,12 +164,10 @@ export const usePrompts = () => {
     let currentPrompt = '';
     for (const line of lines) {
       if (line.includes('**[') && line.includes(']**') && currentPrompt) {
-        // Process previous prompt
         const parsed = parsePromptContent(currentPrompt);
         promptsToImport.push({
           ...parsed,
-          content: currentPrompt,
-          createdBy: user.id
+          content: currentPrompt
         });
         currentPrompt = line;
       } else {
@@ -183,8 +180,7 @@ export const usePrompts = () => {
       const parsed = parsePromptContent(currentPrompt);
       promptsToImport.push({
         ...parsed,
-        content: currentPrompt,
-        createdBy: user.id
+        content: currentPrompt
       });
     }
 
@@ -200,17 +196,14 @@ export const usePrompts = () => {
       keywords: prompt.keywords || [],
       style_tags: prompt.styleTags || [],
       subject_tags: prompt.subjectTags || [],
-      createdBy: user.id,
+      created_by: user.id,
       is_favorite: false,
       usage_count: 0
     }));
 
     const { data, error } = await supabase
       .from('prompts')
-      .insert(dbPrompts.map(prompt => ({
-        ...prompt,
-        created_by: prompt.createdBy
-      })))
+      .insert(dbPrompts)
       .select();
 
     if (error) {
