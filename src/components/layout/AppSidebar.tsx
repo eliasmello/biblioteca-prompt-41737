@@ -12,9 +12,12 @@ import {
   Sparkles,
   BarChart3,
   Lightbulb,
-  LogOut
+  LogOut,
+  Upload
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePrompts } from "@/hooks/usePrompts";
+import ImportDialog from "@/components/prompts/ImportDialog";
 
 import {
   Sidebar,
@@ -47,9 +50,11 @@ const adminItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { profile, signOut } = useAuth();
+  const { importPrompts, refetch } = usePrompts();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  const [isImporting, setIsImporting] = useState(false);
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -63,6 +68,18 @@ export function AppSidebar() {
         ? "bg-primary text-primary-foreground shadow-md"
         : "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground"
     );
+
+  const handleImport = async (content: string) => {
+    setIsImporting(true);
+    try {
+      await importPrompts(content);
+      await refetch();
+    } catch (error) {
+      console.error('Erro ao importar prompts:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   return (
     <Sidebar
@@ -94,10 +111,12 @@ export function AppSidebar() {
         {/* Quick Actions */}
         {!collapsed && (
           <div className="p-4 space-y-2">
-            <Button size="sm" className="w-full justify-start gap-2" variant="default">
-              <Plus className="w-4 h-4" />
-              New Prompt
-            </Button>
+            <ImportDialog onImport={handleImport} isImporting={isImporting}>
+              <Button size="sm" className="w-full justify-start gap-2" variant="default">
+                <Upload className="w-4 h-4" />
+                Importar Prompts
+              </Button>
+            </ImportDialog>
             <Button size="sm" className="w-full justify-start gap-2" variant="outline">
               <Search className="w-4 h-4" />
               Quick Search

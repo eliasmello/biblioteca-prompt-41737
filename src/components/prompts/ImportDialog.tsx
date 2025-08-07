@@ -21,9 +21,10 @@ import { getDocument } from 'pdfjs-dist';
 interface ImportDialogProps {
   onImport: (content: string) => void;
   isImporting?: boolean;
+  children?: React.ReactNode;
 }
 
-export default function ImportDialog({ onImport, isImporting }: ImportDialogProps) {
+export default function ImportDialog({ onImport, isImporting, children }: ImportDialogProps) {
   const { toast } = useToast();
   const [content, setContent] = useState('');
   const [open, setOpen] = useState(false);
@@ -190,10 +191,12 @@ export default function ImportDialog({ onImport, isImporting }: ImportDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Upload className="h-4 w-4" />
-          Importar Prompts
-        </Button>
+        {children || (
+          <Button variant="outline" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Importar Prompts
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
