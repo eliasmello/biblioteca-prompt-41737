@@ -74,9 +74,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: "Redirecionando para o painel..."
           });
           
-          // Redirect to dashboard after successful login
+          // Redirect to home after successful login
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            window.location.href = '/';
           }, 1500);
         }
       }
