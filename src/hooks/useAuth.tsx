@@ -80,8 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }
 
-        // Handle successful login
-        if (event === 'SIGNED_IN' && session?.user) {
+        // Handle successful login - only show on actual login, not on page refresh
+        if (event === 'SIGNED_IN' && session?.user && !user) {
           toast({
             title: "Login realizado com sucesso!",
             description: "Bem-vindo ao PromptForge!"
