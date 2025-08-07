@@ -11,7 +11,7 @@ interface PromptCardProps {
   onPreview: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onCopy: (content: string) => void;
-  onEdit?: (id: string) => void;
+  onEdit?: (id: string, promptData?: { content: string; previewImage?: string | null }) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -104,7 +104,10 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
               variant="secondary"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit(prompt.id);
+                onEdit(prompt.id, {
+                  content: cleanPromptContent(prompt.content),
+                  previewImage: previewImage
+                });
               }}
               className="w-8 h-8 p-0"
             >
