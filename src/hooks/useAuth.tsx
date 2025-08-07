@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,41 +32,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      return data;
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
       return null;
     }
-    return data;
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
         console.log('Auth event:', event, 'Session:', !!session);
         
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer profile fetch with setTimeout to prevent deadlock
         if (session?.user) {
+          // Fetch profile in background
           setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
-            setProfile(profileData as Profile);
-            setLoading(false);
-          }, 0);
+            if (!mounted) return;
+            try {
+              const profileData = await fetchProfile(session.user.id);
+              if (mounted) {
+                setProfile(profileData as Profile);
+                setLoading(false);
+              }
+            } catch (error) {
+              console.error('Error fetching profile:', error);
+              if (mounted) {
+                setLoading(false);
+              }
+            }
+          }, 100);
         } else {
           setProfile(null);
           setLoading(false);
         }
 
-        // Handle specific auth events
+        // Handle successful login
         if (event === 'SIGNED_IN' && session?.user) {
           toast({
             title: "Login realizado com sucesso!",
@@ -77,91 +95,142 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData as Profile);
-          setLoading(false);
-        }, 0);
-      } else {
-        setLoading(false);
-      }
-    });
+    // Check for existing session
+    const getSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) setLoading(false);
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        if (!mounted) return;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          try {
+            const profileData = await fetchProfile(session.user.id);
+            if (mounted) {
+              setProfile(profileData as Profile);
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error('Error fetching profile on mount:', error);
+            if (mounted) setLoading(false);
+          }
+        } else {
+          if (mounted) setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error in getSession:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    getSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [toast]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const redirectUrl = `${window.location.origin}/auth`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          name: name
+    try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: { name }
         }
-      }
-    });
-
-    if (error) {
-      toast({
-        title: "Erro no cadastro",
-        description: error.message,
-        variant: "destructive"
       });
-    } else if (data.user && !data.user.email_confirmed_at) {
-      toast({
-        title: "Cadastro realizado!",
-        description: "Por favor, verifique seu e-mail e clique no link de confirmação enviado para validar sua conta.",
-        variant: "default"
-      });
-    }
 
-    return { error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      if (error.message.includes('Email not confirmed')) {
+      if (error) {
         toast({
-          title: "E-mail não confirmado",
-          description: "Por favor, verifique seu e-mail e clique no link de confirmação antes de fazer login.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Erro no login",
+          title: "Erro no cadastro",
           description: error.message,
           variant: "destructive"
         });
+        return { error };
       }
-    }
-    // Success message will be handled by the auth state change listener
 
-    return { error };
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Cadastro realizado!",
+          description: "Por favor, verifique seu e-mail e clique no link de confirmação enviado para validar sua conta.",
+        });
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erro no cadastro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+      return { error };
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        let errorMessage = error.message;
+        
+        if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Por favor, verifique seu e-mail e clique no link de confirmação antes de fazer login.";
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "E-mail ou senha incorretos.";
+        }
+        
+        toast({
+          title: "Erro no login",
+          description: errorMessage,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erro no login",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    toast({
-      title: "Logout realizado",
-      description: "Até logo!"
-    });
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      toast({
+        title: "Logout realizado",
+        description: "Até logo!"
+      });
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Erro no logout",
+        description: "Ocorreu um erro ao fazer logout.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
