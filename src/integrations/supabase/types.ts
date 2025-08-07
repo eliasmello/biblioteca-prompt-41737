@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          name: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      prompts: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          keywords: string[] | null
+          number: number | null
+          style_tags: string[] | null
+          subcategory: string | null
+          subject_tags: string[] | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          keywords?: string[] | null
+          number?: number | null
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          updated_by?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          keywords?: string[] | null
+          number?: number | null
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

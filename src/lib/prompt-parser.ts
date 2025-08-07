@@ -10,6 +10,45 @@ const PROMPT_PATTERNS = {
   moodTags: /(confident|approachable|authoritative|mysterious|high-tech|dystopian|reflective|peaceful|bittersweet)/gi
 };
 
+export const parsePromptContent = (rawPrompt: string): ParsedPrompt => {
+  const categoryMatch = rawPrompt.match(PROMPT_PATTERNS.category);
+  const numberMatch = rawPrompt.match(PROMPT_PATTERNS.number);
+  
+  let category = '';
+  let subcategory = '';
+  
+  if (categoryMatch) {
+    const parts = categoryMatch[1].split('/').map(p => p.trim());
+    category = parts[0];
+    subcategory = parts[1] || '';
+  }
+  
+  // Extract various types of tags
+  const styleTags = [...rawPrompt.matchAll(PROMPT_PATTERNS.styleTags)]
+    .map(match => match[0].toLowerCase())
+    .filter((tag, index, arr) => arr.indexOf(tag) === index);
+    
+  const subjectTags = [...rawPrompt.matchAll(PROMPT_PATTERNS.subjectTags)]
+    .map(match => match[0].toLowerCase())
+    .filter((tag, index, arr) => arr.indexOf(tag) === index);
+    
+  const technicalTags = [...rawPrompt.matchAll(PROMPT_PATTERNS.technicalTags)]
+    .map(match => match[0].toLowerCase())
+    .filter((tag, index, arr) => arr.indexOf(tag) === index);
+  
+  return {
+    category,
+    subcategory,
+    number: numberMatch ? parseInt(numberMatch[1]) : undefined,
+    content: rawPrompt,
+    extractedTags: {
+      style: styleTags,
+      subject: subjectTags,
+      technical: technicalTags
+    }
+  };
+};
+
 export class PromptParser {
   /**
    * Parse a raw prompt string and extract structured information

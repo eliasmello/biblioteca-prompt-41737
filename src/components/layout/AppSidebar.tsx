@@ -11,8 +11,10 @@ import {
   Plus,
   Sparkles,
   BarChart3,
-  Lightbulb
+  Lightbulb,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Sidebar,
@@ -44,6 +46,7 @@ const adminItems = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { profile, signOut } = useAuth();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
@@ -183,6 +186,26 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* User Profile & Logout */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <User className="w-4 h-4" />
+                  {!collapsed && <span>{profile?.name || 'Usuário'}</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                  {!collapsed && <span>Sair</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
