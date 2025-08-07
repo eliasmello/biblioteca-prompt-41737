@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy, Calendar, Eye, Edit, Trash2 } from "lucide-react";
+import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
+import { useState, useEffect } from "react";
 
 interface PromptCardProps {
   prompt: any;
@@ -14,10 +16,27 @@ interface PromptCardProps {
 }
 
 export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const { generateImage, isLoading: imageLoading } = useImageGeneration();
+
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
     return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
   };
+
+  useEffect(() => {
+    const generatePreview = async () => {
+      const cleanContent = cleanPromptContent(prompt.content);
+      if (cleanContent && !previewImage) {
+        const imageUrl = await generateImage(cleanContent);
+        if (imageUrl) {
+          setPreviewImage(imageUrl);
+        }
+      }
+    };
+
+    generatePreview();
+  }, [prompt.content, generateImage, previewImage]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,9 +49,30 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
       onClick={() => onPreview(prompt.id)}
     >
       <CardContent className="p-6">
+        {/* Image preview */}
+        <div className="mb-4 relative">
+          <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border/50">
+            {imageLoading ? (
+              <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : previewImage ? (
+              <img 
+                src={previewImage} 
+                alt="Prompt preview" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <ImageIcon className="w-8 h-8" />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Favorite indicator */}
         {prompt.isFavorite && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2 z-10">
             <Star className="w-4 h-4 text-yellow-500 fill-current" />
           </div>
         )}
