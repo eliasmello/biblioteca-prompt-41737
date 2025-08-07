@@ -47,18 +47,6 @@ export function PromptPreviewModal({
     // You could add a toast notification here
   };
 
-  const formatPromptContent = (content: string) => {
-    // Simple formatting for demonstration
-    // In real implementation, you'd have more sophisticated parsing
-    return content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .split('\n')
-      .map((line, index) => (
-        <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: line }} />
-      ));
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
@@ -113,8 +101,8 @@ export function PromptPreviewModal({
             </div>
             
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
-              <div className="prompt-highlight">
-                {formatPromptContent(prompt.content)}
+              <div className="prompt-highlight whitespace-pre-wrap">
+                {prompt.content}
               </div>
             </div>
           </div>
