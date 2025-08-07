@@ -14,9 +14,14 @@ interface PromptCardProps {
 }
 
 export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
+  const cleanPromptContent = (content: string) => {
+    // Remove prompt number and "prompt:" prefix
+    return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
+  };
+
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onCopy(prompt.content);
+    onCopy(cleanPromptContent(prompt.content));
   };
 
   return (
@@ -106,7 +111,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
 
         {/* Content preview */}
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-          {prompt.content}
+          {cleanPromptContent(prompt.content)}
         </p>
 
         {/* Tags */}

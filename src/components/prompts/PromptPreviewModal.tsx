@@ -42,14 +42,19 @@ export function PromptPreviewModal({
 }: PromptPreviewModalProps) {
   if (!prompt) return null;
 
+  const cleanPromptContent = (content: string) => {
+    // Remove prompt number and "prompt:" prefix
+    return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
+  };
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(prompt.content);
+    navigator.clipboard.writeText(cleanPromptContent(prompt.content));
     // You could add a toast notification here
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass [&>button]:top-6 [&>button]:right-6 [&>button]:z-10">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -102,7 +107,7 @@ export function PromptPreviewModal({
             
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
               <div className="prompt-highlight whitespace-pre-wrap">
-                {prompt.content}
+                {cleanPromptContent(prompt.content)}
               </div>
             </div>
           </div>
