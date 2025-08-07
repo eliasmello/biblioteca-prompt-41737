@@ -1,127 +1,144 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Star, Eye, MoreHorizontal } from "lucide-react";
+import { Star, Copy, Calendar, Eye, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PromptCardProps {
-  prompt: {
-    id: string;
-    number?: number;
-    title: string;
-    category: string;
-    subcategory?: string;
-    content: string;
-    tags: string[];
-    styleTags: string[];
-    isFavorite: boolean;
-    usageCount: number;
-    createdAt: string;
-  };
+  prompt: any;
   onPreview: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onCopy: (content: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy }: PromptCardProps) {
-  const handleCopy = () => {
-    navigator.clipboard.writeText(prompt.content);
+export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onCopy(prompt.content);
   };
 
   return (
-    <Card className="group hover:shadow-md transition-all duration-200 hover:scale-[1.02] glass border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              {prompt.number && (
-                <Badge variant="outline" className="text-xs font-mono">
-                  #{prompt.number}
-                </Badge>
-              )}
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="text-xs">
-                  {prompt.category}
-                </Badge>
-                {prompt.subcategory && (
-                  <Badge variant="outline" className="text-xs">
-                    {prompt.subcategory}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
-              {prompt.title}
-            </h3>
-            
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {prompt.content.slice(0, 120)}...
-            </p>
+    <Card 
+      className="group cursor-pointer hover:shadow-lg transition-all duration-200 glass relative overflow-hidden"
+      onClick={() => onPreview(prompt.id)}
+    >
+      <CardContent className="p-6">
+        {/* Favorite indicator */}
+        {prompt.isFavorite && (
+          <div className="absolute top-2 left-2">
+            <Star className="w-4 h-4 text-yellow-500 fill-current" />
           </div>
+        )}
 
+        {/* Action buttons - show on hover */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
           <Button
-            variant="ghost"
             size="sm"
-            onClick={() => onToggleFavorite(prompt.id)}
-            className={cn(
-              "opacity-0 group-hover:opacity-100 transition-opacity",
-              prompt.isFavorite && "opacity-100 text-yellow-500"
-            )}
+            variant="secondary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(prompt.id);
+            }}
+            className="w-8 h-8 p-0"
           >
-            <Star className={cn("w-4 h-4", prompt.isFavorite && "fill-current")} />
+            <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
           </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1 mb-4">
-          {prompt.styleTags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs bg-primary-muted text-primary">
-              {tag}
-            </Badge>
-          ))}
-          {prompt.styleTags.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{prompt.styleTags.length - 3}
-            </Badge>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleCopy}
+            className="w-8 h-8 p-0"
+          >
+            <Copy className="w-3 h-3" />
+          </Button>
+          {onEdit && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(prompt.id);
+              }}
+              className="w-8 h-8 p-0"
+            >
+              <Edit className="w-3 h-3" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(prompt.id);
+              }}
+              className="w-8 h-8 p-0"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onPreview(prompt.id)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            {prompt.number && (
+              <Badge variant="outline" className="font-mono text-xs">
+                #{prompt.number}
+              </Badge>
+            )}
+            <Badge className="bg-primary text-primary-foreground text-xs">
+              {prompt.category}
+            </Badge>
+            {prompt.subcategory && (
+              <Badge variant="outline" className="text-xs">
+                {prompt.subcategory}
+              </Badge>
+            )}
           </div>
+          
+          <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            {prompt.title}
+          </h3>
+        </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{prompt.usageCount} uses</span>
-            <span>•</span>
-            <span>{new Date(prompt.createdAt).toLocaleDateString()}</span>
+        {/* Content preview */}
+        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+          {prompt.content}
+        </p>
+
+        {/* Tags */}
+        {(prompt.styleTags?.length > 0 || prompt.subjectTags?.length > 0) && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {prompt.styleTags?.slice(0, 3).map((tag: string) => (
+              <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {prompt.subjectTags?.slice(0, 2).map((tag: string) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {(prompt.styleTags?.length > 3 || prompt.subjectTags?.length > 2) && (
+              <Badge variant="secondary" className="text-xs">
+                +{(prompt.styleTags?.length || 0) + (prompt.subjectTags?.length || 0) - 5} more
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Usage count and date */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Eye className="w-3 h-3" />
+            {prompt.usageCount || 0} uses
+          </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {new Date(prompt.createdAt).toLocaleDateString()}
           </div>
         </div>
       </CardContent>

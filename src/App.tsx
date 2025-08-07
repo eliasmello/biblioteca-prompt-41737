@@ -7,6 +7,8 @@ import { Layout } from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Dashboard from "./pages/Dashboard";
 import Prompts from "./pages/Prompts";
+import PromptEditor from "./pages/PromptEditor";
+import Categories from "./pages/Categories";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -49,10 +51,24 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
+            <Route path="/prompts/new" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PromptEditor />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/prompts/edit/:id" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PromptEditor />
+                </Layout>
+              </ProtectedRoute>
+            } />
             <Route path="/categories" element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-8"><h1 className="text-2xl font-bold">Categories</h1><p className="text-muted-foreground">Categories management coming soon...</p></div>
+                  <Categories />
                 </Layout>
               </ProtectedRoute>
             } />

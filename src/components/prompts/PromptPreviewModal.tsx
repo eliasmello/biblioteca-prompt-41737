@@ -29,6 +29,7 @@ interface PromptPreviewModalProps {
   } | null;
   onToggleFavorite: (id: string) => void;
   onEdit: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function PromptPreviewModal({
@@ -37,6 +38,7 @@ export function PromptPreviewModal({
   prompt,
   onToggleFavorite,
   onEdit,
+  onDelete,
 }: PromptPreviewModalProps) {
   if (!prompt) return null;
 

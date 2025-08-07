@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,9 @@ import {
 } from "@/components/ui/select";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
+import ImportDialog from "@/components/prompts/ImportDialog";
+import { usePrompts } from "@/hooks/usePrompts";
+import { useToast } from "@/hooks/use-toast";
 import {
   Search,
   Plus,
@@ -20,103 +24,155 @@ import {
   Grid3X3,
   List,
   Star,
-  Download
+  Download,
+  Upload,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Prompt } from "@/types/prompt";
 
 export default function Prompts() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { 
+    prompts, 
+    loading, 
+    createPrompt, 
+    updatePrompt, 
+    deletePrompt, 
+    importPrompts, 
+    refetch 
+  } = usePrompts();
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
-  // Mock data - in real app this would come from API
-  const prompts = [
-    {
-      id: "1",
-      number: 6,
-      title: "Diorama / Nature Scene",
-      category: "Diorama",
-      subcategory: "Nature Scene",
-      content: "Design a hyper-realistic miniature diorama on a rustic wooden table, inspired by Into the Wild. Scene: dense pine forest, frost-covered terrain, and animal tracks. Central figure: a young man beside the iconic Magic Bus 142, weathered, with layered outdoor clothing. Props: journal, tin cup, backpack, fire, pot, and an open book. Add wildlife: fox, birds, rabbit. Bus details: rust, graffiti, cracked windows. Lighting: golden hour. Camera: macro lens, shallow depth of field. Mood: reflective, peaceful, bittersweet.",
-      tags: ["diorama", "nature", "miniature", "realistic"],
-      styleTags: ["hyper-realistic", "golden hour", "macro lens", "shallow depth"],
-      subjectTags: ["forest", "man", "bus", "wildlife"],
-      isFavorite: true,
-      usageCount: 45,
-      createdAt: "2024-01-15T10:30:00Z"
-    },
-    {
-      id: "2",
-      number: 7,
-      title: "Corporate Portrait",
-      category: "Portrait",
-      subcategory: "Professional",
-      content: "Professional headshot of a confident business executive in a modern office setting. Subject: middle-aged professional in tailored navy suit. Lighting: soft window light with subtle fill. Background: minimalist office with glass windows showing city skyline. Camera: 85mm lens, f/2.8. Mood: confident, approachable, authoritative.",
-      tags: ["portrait", "professional", "business", "headshot"],
-      styleTags: ["professional", "studio lighting", "clean", "modern"],
-      subjectTags: ["executive", "office", "suit", "corporate"],
-      isFavorite: false,
-      usageCount: 32,
-      createdAt: "2024-01-14T14:20:00Z"
-    },
-    {
-      id: "3",
-      number: 8,
-      title: "Cyberpunk Cityscape",
-      category: "Landscape",
-      subcategory: "Urban",
-      content: "Futuristic cyberpunk cityscape at night with neon-lit skyscrapers and flying vehicles. Scene: towering megastructures with holographic advertisements, rain-slicked streets reflecting neon lights. Atmosphere: dense fog, ambient lighting from various neon sources. Color palette: electric blues, hot pinks, deep purples. Camera: wide-angle view, high contrast. Mood: mysterious, high-tech, dystopian.",
-      tags: ["cityscape", "futuristic", "night", "urban"],
-      styleTags: ["cyberpunk", "neon", "high contrast", "atmospheric"],
-      subjectTags: ["city", "skyscrapers", "neon lights", "rain"],
-      isFavorite: true,
-      usageCount: 28,
-      createdAt: "2024-01-13T16:45:00Z"
-    }
-  ];
-
+  // Get unique categories from prompts
   const categories = [
-    { value: "all", label: "All Categories" },
-    { value: "diorama", label: "Diorama" },
-    { value: "portrait", label: "Portrait" },
-    { value: "landscape", label: "Landscape" },
-    { value: "product", label: "Product" }
+    { value: "all", label: "Todas as Categorias" },
+    ...Array.from(new Set(prompts.map(p => p.category)))
+      .filter(Boolean)
+      .map(cat => ({ value: cat.toLowerCase(), label: cat }))
   ];
 
   const handlePreview = (id: string) => {
     const prompt = prompts.find(p => p.id === id);
-    setSelectedPrompt(prompt);
-    setIsPreviewOpen(true);
+    if (prompt) {
+      setSelectedPrompt(prompt);
+      setIsPreviewOpen(true);
+    }
   };
 
-  const handleToggleFavorite = (id: string) => {
-    console.log('Toggle favorite:', id);
-    // In real app, this would update the backend
+  const handleToggleFavorite = async (id: string) => {
+    const prompt = prompts.find(p => p.id === id);
+    if (prompt) {
+      await updatePrompt(id, { isFavorite: !prompt.isFavorite });
+      refetch();
+    }
   };
 
   const handleCopy = (content: string) => {
-    console.log('Copied:', content.slice(0, 50) + '...');
-    // You could show a toast notification here
+    navigator.clipboard.writeText(content);
+    toast({
+      title: "Copiado!",
+      description: "Prompt copiado para a área de transferência.",
+    });
   };
 
   const handleEdit = (id: string) => {
-    console.log('Edit prompt:', id);
-    // Navigate to edit page
+    navigate(`/prompts/edit/${id}`);
   };
 
-  const filteredPrompts = prompts.filter(prompt => {
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este prompt?')) {
+      await deletePrompt(id);
+      refetch();
+    }
+  };
+
+  const handleImport = async (content: string) => {
+    setIsImporting(true);
+    try {
+      await importPrompts(content);
+      await refetch();
+      toast({
+        title: "Sucesso!",
+        description: "Prompts importados com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao importar prompts.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleExport = () => {
+    const exportData = filteredPrompts.map(prompt => ({
+      title: prompt.title,
+      category: prompt.category,
+      subcategory: prompt.subcategory,
+      content: prompt.content,
+      description: prompt.description,
+      number: prompt.number
+    }));
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'prompts-export.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sortedPrompts = [...prompts].sort((a, b) => {
+    switch (sortBy) {
+      case 'popular':
+        return (b.usageCount || 0) - (a.usageCount || 0);
+      case 'alphabetical':
+        return a.title.localeCompare(b.title);
+      case 'favorites':
+        return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+      case 'recent':
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
+
+  const filteredPrompts = sortedPrompts.filter(prompt => {
     const matchesSearch = prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          prompt.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         prompt.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                         (prompt.category && prompt.category.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesCategory = selectedCategory === 'all' || 
-                           prompt.category.toLowerCase() === selectedCategory;
+                           (prompt.category && prompt.category.toLowerCase() === selectedCategory);
 
-    return matchesSearch && matchesCategory;
+    const matchesFavorites = !showFavoritesOnly || prompt.isFavorite;
+
+    return matchesSearch && matchesCategory && matchesFavorites;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando prompts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -125,18 +181,30 @@ export default function Prompts() {
         <div>
           <h1 className="text-3xl font-bold gradient-text">Prompts</h1>
           <p className="text-muted-foreground mt-1">
-            Manage and organize your AI prompts
+            Gerencie e organize seus prompts de IA
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => navigate('/categories')}
+          >
+            <Settings className="w-4 h-4" />
+            Categorias
           </Button>
-          <Button className="gap-2 bg-gradient-primary">
+          <Button variant="outline" className="gap-2" onClick={handleExport}>
+            <Download className="w-4 h-4" />
+            Exportar
+          </Button>
+          <ImportDialog onImport={handleImport} isImporting={isImporting} />
+          <Button 
+            className="gap-2 bg-gradient-primary"
+            onClick={() => navigate('/prompts/new')}
+          >
             <Plus className="w-4 h-4" />
-            New Prompt
+            Novo Prompt
           </Button>
         </div>
       </div>
@@ -149,7 +217,7 @@ export default function Prompts() {
             <div className="relative flex-1 min-w-[300px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search prompts, tags, content..."
+                placeholder="Buscar prompts, categorias, conteúdo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -178,10 +246,10 @@ export default function Prompts() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="popular">Most Used</SelectItem>
-                <SelectItem value="alphabetical">Alphabetical</SelectItem>
-                <SelectItem value="favorites">Favorites</SelectItem>
+                <SelectItem value="recent">Mais Recentes</SelectItem>
+                <SelectItem value="popular">Mais Usados</SelectItem>
+                <SelectItem value="alphabetical">Alfabética</SelectItem>
+                <SelectItem value="favorites">Favoritos</SelectItem>
               </SelectContent>
             </Select>
 
@@ -214,17 +282,23 @@ export default function Prompts() {
 
           {/* Active Filters */}
           <div className="flex items-center gap-2 mt-4">
-            <span className="text-sm text-muted-foreground">Active filters:</span>
+            <span className="text-sm text-muted-foreground">Filtros ativos:</span>
             {searchQuery && (
               <Badge variant="secondary" className="gap-1">
-                Search: "{searchQuery}"
+                Busca: "{searchQuery}"
                 <button onClick={() => setSearchQuery('')} className="ml-1">×</button>
               </Badge>
             )}
             {selectedCategory !== 'all' && (
               <Badge variant="secondary" className="gap-1">
-                Category: {categories.find(c => c.value === selectedCategory)?.label}
+                Categoria: {categories.find(c => c.value === selectedCategory)?.label}
                 <button onClick={() => setSelectedCategory('all')} className="ml-1">×</button>
+              </Badge>
+            )}
+            {showFavoritesOnly && (
+              <Badge variant="secondary" className="gap-1">
+                Apenas Favoritos
+                <button onClick={() => setShowFavoritesOnly(false)} className="ml-1">×</button>
               </Badge>
             )}
           </div>
@@ -234,30 +308,49 @@ export default function Prompts() {
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredPrompts.length} of {prompts.length} prompts
+          Mostrando {filteredPrompts.length} de {prompts.length} prompts
         </p>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <Star className="w-4 h-4" />
-          Show only favorites
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="gap-2"
+          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        >
+          <Star className={cn("w-4 h-4", showFavoritesOnly && "fill-current")} />
+          {showFavoritesOnly ? 'Mostrar todos' : 'Apenas favoritos'}
         </Button>
       </div>
 
       {/* Prompts Grid/List */}
-      <div className={cn(
-        viewMode === 'grid' 
-          ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-          : "space-y-4"
-      )}>
-        {filteredPrompts.map((prompt) => (
-          <PromptCard
-            key={prompt.id}
-            prompt={prompt}
-            onPreview={handlePreview}
-            onToggleFavorite={handleToggleFavorite}
-            onCopy={handleCopy}
-          />
-        ))}
-      </div>
+      {filteredPrompts.length === 0 ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="text-muted-foreground">
+              <Upload className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Nenhum prompt encontrado</h3>
+              <p>Comece criando um novo prompt ou importe prompts existentes.</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className={cn(
+          viewMode === 'grid' 
+            ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+            : "space-y-4"
+        )}>
+          {filteredPrompts.map((prompt) => (
+            <PromptCard
+              key={prompt.id}
+              prompt={prompt}
+              onPreview={handlePreview}
+              onToggleFavorite={handleToggleFavorite}
+              onCopy={handleCopy}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Preview Modal */}
       <PromptPreviewModal
@@ -266,6 +359,7 @@ export default function Prompts() {
         prompt={selectedPrompt}
         onToggleFavorite={handleToggleFavorite}
         onEdit={handleEdit}
+        onDelete={handleDelete}
       />
     </div>
   );
