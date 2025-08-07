@@ -71,13 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           toast({
             title: "Login realizado com sucesso!",
-            description: "Redirecionando para o painel..."
+            description: "Bem-vindo ao PromptForge!"
           });
-          
-          // Redirect to home after successful login
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
         }
       }
     );
