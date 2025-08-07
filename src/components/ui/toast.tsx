@@ -11,18 +11,14 @@ const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
-  <>
-    {/* Overlay background */}
-    <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm animate-fade-in" />
-    <ToastPrimitives.Viewport
-      ref={ref}
-      className={cn(
-        "fixed top-1/2 left-1/2 z-[100] flex max-h-screen w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 flex-col p-4",
-        className
-      )}
-      {...props}
-    />
-  </>
+  <ToastPrimitives.Viewport
+    ref={ref}
+    className={cn(
+      "fixed top-1/2 left-1/2 z-[100] flex max-h-screen w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 flex-col p-4",
+      className
+    )}
+    {...props}
+  />
 ))
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
