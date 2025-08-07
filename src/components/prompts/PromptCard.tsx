@@ -17,7 +17,7 @@ interface PromptCardProps {
 
 export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const { generateImage, isLoading: imageLoading } = useImageGeneration();
+  const { generateImage, isLoading: imageLoading, error } = useImageGeneration();
 
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
@@ -27,7 +27,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
   useEffect(() => {
     const generatePreview = async () => {
       const cleanContent = cleanPromptContent(prompt.content);
-      if (cleanContent && !previewImage) {
+      if (cleanContent && !previewImage && !imageLoading && !error) {
         const imageUrl = await generateImage(cleanContent);
         if (imageUrl) {
           setPreviewImage(imageUrl);
@@ -36,7 +36,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
     };
 
     generatePreview();
-  }, [prompt.content, generateImage, previewImage]);
+  }, [prompt.content, generateImage, previewImage, imageLoading, error]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();

@@ -21,6 +21,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       });
 
       if (functionError) {
+        console.error('Function error:', functionError);
         throw new Error(functionError.message);
       }
 
@@ -31,6 +32,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       return null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
+      console.error('Image generation error:', errorMessage);
       setError(errorMessage);
       return null;
     } finally {
