@@ -52,6 +52,7 @@ export type Database = {
           is_favorite: boolean | null
           keywords: string[] | null
           number: number | null
+          preview_image: string | null
           style_tags: string[] | null
           subcategory: string | null
           subject_tags: string[] | null
@@ -71,6 +72,7 @@ export type Database = {
           is_favorite?: boolean | null
           keywords?: string[] | null
           number?: number | null
+          preview_image?: string | null
           style_tags?: string[] | null
           subcategory?: string | null
           subject_tags?: string[] | null
@@ -90,6 +92,7 @@ export type Database = {
           is_favorite?: boolean | null
           keywords?: string[] | null
           number?: number | null
+          preview_image?: string | null
           style_tags?: string[] | null
           subcategory?: string | null
           subject_tags?: string[] | null
