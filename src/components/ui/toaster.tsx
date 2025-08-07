@@ -13,11 +13,6 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {/* Overlay - only show when there are toasts */}
-      {toasts.length > 0 && (
-        <div className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm animate-fade-in" />
-      )}
-      
       {/* Toast messages */}
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
