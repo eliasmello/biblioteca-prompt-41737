@@ -200,14 +200,17 @@ export const usePrompts = () => {
       keywords: prompt.keywords || [],
       style_tags: prompt.styleTags || [],
       subject_tags: prompt.subjectTags || [],
-      created_by: user.id,
+      createdBy: user.id,
       is_favorite: false,
       usage_count: 0
     }));
 
     const { data, error } = await supabase
       .from('prompts')
-      .insert(dbPrompts)
+      .insert(dbPrompts.map(prompt => ({
+        ...prompt,
+        created_by: prompt.createdBy
+      })))
       .select();
 
     if (error) {
