@@ -31,19 +31,9 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
       return;
     }
 
-    // Only generate a new image if there's no saved image and we haven't tried yet
-    const generatePreview = async () => {
-      const cleanContent = cleanPromptContent(prompt.content);
-      if (cleanContent && !previewImage && !imageLoading && !error && !prompt.previewImage) {
-        const imageUrl = await generateImage(cleanContent);
-        if (imageUrl) {
-          setPreviewImage(imageUrl);
-        }
-      }
-    };
-
-    generatePreview();
-  }, [prompt.content, prompt.previewImage, generateImage, previewImage, imageLoading, error]);
+    // Skip automatic image generation to improve performance
+    // Images will only be generated on demand
+  }, [prompt.previewImage]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();

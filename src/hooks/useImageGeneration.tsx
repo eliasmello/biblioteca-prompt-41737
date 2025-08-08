@@ -16,11 +16,25 @@ export function useImageGeneration(): UseImageGenerationReturn {
     setError(null);
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke('generate-prompt-image', {
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const requestPromise = supabase.functions.invoke('generate-prompt-image', {
         body: { prompt }
       });
 
+      const { data, error: functionError } = await Promise.race([
+        requestPromise,
+        timeoutPromise
+      ]) as any;
+
       if (functionError) {
+        // Silently fail for API key errors to avoid console spam
+        if (functionError.message?.includes('OPENAI_API_KEY')) {
+          return null;
+        }
         console.error('Function error:', functionError);
         throw new Error(functionError.message);
       }
@@ -31,6 +45,10 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       return null;
     } catch (err) {
+      // Silently fail for API key errors to avoid console spam
+      if (err instanceof Error && err.message?.includes('OPENAI_API_KEY')) {
+        return null;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
       console.error('Image generation error:', errorMessage);
       setError(errorMessage);

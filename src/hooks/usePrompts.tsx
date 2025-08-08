@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -11,7 +11,7 @@ export const usePrompts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchPrompts = async () => {
+  const fetchPrompts = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -43,9 +43,9 @@ export const usePrompts = () => {
       setPrompts(mappedPrompts);
     }
     setLoading(false);
-  };
+  }, [user, toast]);
 
-  const createPrompt = async (promptData: Partial<Prompt>) => {
+  const createPrompt = useCallback(async (promptData: Partial<Prompt>) => {
     if (!user) return { error: 'User not authenticated' };
 
     const parsed = parsePromptContent(promptData.content || '');
@@ -88,9 +88,9 @@ export const usePrompts = () => {
       await fetchPrompts();
       return { data };
     }
-  };
+  }, [user, toast, fetchPrompts]);
 
-  const updatePrompt = async (id: string, promptData: Partial<Prompt>) => {
+  const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>) => {
     if (!user) return { error: 'User not authenticated' };
 
     // Map frontend fields to database fields
@@ -131,9 +131,9 @@ export const usePrompts = () => {
       await fetchPrompts();
       return { data };
     }
-  };
+  }, [toast, fetchPrompts]);
 
-  const deletePrompt = async (id: string) => {
+  const deletePrompt = useCallback(async (id: string) => {
     if (!user) return { error: 'User not authenticated' };
 
     const { error } = await supabase
@@ -156,9 +156,9 @@ export const usePrompts = () => {
       await fetchPrompts();
       return { success: true };
     }
-  };
+  }, [toast, fetchPrompts]);
 
-  const importPrompts = async (content: string) => {
+  const importPrompts = useCallback(async (content: string) => {
     if (!user) return { error: 'User not authenticated' };
 
     const promptsToImport: Partial<Prompt>[] = [];
@@ -298,15 +298,16 @@ export const usePrompts = () => {
       await fetchPrompts();
       return { data };
     }
-  };
+  }, [user, toast, fetchPrompts]);
 
   useEffect(() => {
     if (user) {
       fetchPrompts();
     }
-  }, [user]);
+  }, [user, fetchPrompts]);
 
-  return {
+  // Memoize the return object to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     prompts,
     loading,
     createPrompt,
@@ -314,5 +315,7 @@ export const usePrompts = () => {
     deletePrompt,
     importPrompts,
     refetch: fetchPrompts
-  };
+  }), [prompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts]);
+
+  return value;
 };
