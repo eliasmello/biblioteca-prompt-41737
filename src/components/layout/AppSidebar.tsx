@@ -4,7 +4,7 @@ import {
   Search,
   Home,
   FileText,
-  FolderOpen,
+  
   Star,
   Settings,
   User,
@@ -37,7 +37,6 @@ import { cn } from "@/lib/utils";
 const mainItems = [
   { title: "Prompts", url: "/prompts", icon: FileText },
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Categorias", url: "/categories", icon: FolderOpen },
   { title: "Favoritos", url: "/favorites", icon: Star },
 ];
 
@@ -56,14 +55,6 @@ export function AppSidebar() {
   const [isImporting, setIsImporting] = useState(false);
   
   const favoritesCount = useMemo(() => prompts.filter((p) => p.isFavorite).length, [prompts]);
-  const categoryStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    prompts.forEach((p) => {
-      const name = (p.category || '').trim();
-      if (name) counts.set(name, (counts.get(name) || 0) + 1);
-    });
-    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [prompts]);
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -145,6 +136,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Import */}
+        {!collapsed && (
+          <div className="p-4 pt-0 space-y-2">
+            <ImportDialog onImport={handleImport} isImporting={isImporting}>
+              <Button size="sm" className="w-full justify-start gap-2" variant="default">
+                <Upload className="w-4 h-4" />
+                Importar Prompts
+              </Button>
+            </ImportDialog>
+          </div>
+        )}
+
         {/* Admin Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">
@@ -175,48 +178,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Categories */}
-        {!collapsed && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">
-              Categories
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {categoryStats.length === 0 ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton disabled>
-                      <div className="w-3 h-3 rounded-full bg-muted-foreground/30"></div>
-                      <span>Nenhuma categoria</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : (
-                  categoryStats.map(([name, count]) => (
-                    <SidebarMenuItem key={name}>
-                      <SidebarMenuButton>
-                        <div className="w-3 h-3 rounded-full bg-muted-foreground/30"></div>
-                        <span>{name}</span>
-                        <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">{count}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
-        {/* Import */}
-        {!collapsed && (
-          <div className="p-4 pt-0 space-y-2">
-            <ImportDialog onImport={handleImport} isImporting={isImporting}>
-              <Button size="sm" className="w-full justify-start gap-2" variant="default">
-                <Upload className="w-4 h-4" />
-                Importar Prompts
-              </Button>
-            </ImportDialog>
-          </div>
-        )}
 
         {/* User Profile & Logout */}
         <SidebarGroup className="mt-auto">
