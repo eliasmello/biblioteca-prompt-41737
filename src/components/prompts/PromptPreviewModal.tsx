@@ -54,43 +54,52 @@ export function PromptPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass [&>button]:top-6 [&>button]:right-6 [&>button]:z-10">
-        <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                {prompt.number && (
-                  <Badge variant="outline" className="font-mono">
-                    #{prompt.number}
-                  </Badge>
-                )}
-                <Badge className="bg-primary text-primary-foreground">
-                  {prompt.category}
-                </Badge>
-                {prompt.subcategory && (
-                  <Badge variant="outline">
-                    {prompt.subcategory}
-                  </Badge>
-                )}
-              </div>
-              <DialogTitle className="text-xl font-bold gradient-text">
-                {prompt.title}
-              </DialogTitle>
-            </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+        <DialogHeader className="relative">
+          {/* Action buttons - positioned absolutely in top-right */}
+          <div className="absolute top-0 right-0 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1 border border-border/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onToggleFavorite(prompt.id)}
+              className={cn(
+                "h-8 w-8 p-0 hover:bg-accent/50 transition-colors",
+                prompt.isFavorite && "text-yellow-500 hover:text-yellow-600"
+              )}
+              title={prompt.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Star className={cn("w-4 h-4", prompt.isFavorite && "fill-current")} />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onEdit(prompt.id)}
+              className="h-8 w-8 p-0 hover:bg-accent/50 transition-colors"
+              title="Edit prompt"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onToggleFavorite(prompt.id)}
-                className={cn(prompt.isFavorite && "text-yellow-500")}
-              >
-                <Star className={cn("w-4 h-4", prompt.isFavorite && "fill-current")} />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => onEdit(prompt.id)}>
-                <Edit className="w-4 h-4" />
-              </Button>
+          <div className="pr-20">
+            <div className="flex items-center gap-2 mb-2">
+              {prompt.number && (
+                <Badge variant="outline" className="font-mono">
+                  #{prompt.number}
+                </Badge>
+              )}
+              <Badge className="bg-primary text-primary-foreground">
+                {prompt.category}
+              </Badge>
+              {prompt.subcategory && (
+                <Badge variant="outline">
+                  {prompt.subcategory}
+                </Badge>
+              )}
             </div>
+            <DialogTitle className="text-xl font-bold gradient-text">
+              {prompt.title}
+            </DialogTitle>
           </div>
         </DialogHeader>
 
