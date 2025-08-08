@@ -33,12 +33,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const mainItems = [
   { title: "Prompts", url: "/prompts", icon: FileText },
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Favoritos", url: "/favorites", icon: Star },
+];
+
+const adminItems = [
+  { title: "Users", url: "/admin/users", icon: User },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 
@@ -148,37 +152,31 @@ export function AppSidebar() {
 
 
 
-        {/* Admin - single icon menu at the bottom */}
+        {/* Admin Section */}
         <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">
+            Admin
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClassName(item.url)}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
               <SidebarMenuItem>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton>
-                      <User className="w-4 h-4" />
-                      {!collapsed && <span>Admin</span>}
-                    </SidebarMenuButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" side="right" sideOffset={8} className="w-48">
-                    <DropdownMenuItem asChild>
-                      <NavLink to="/admin/users" className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span>Users</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <NavLink to="/admin/settings" className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        <span>Settings</span>
-                      </NavLink>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); signOut(); }}>
-                      <LogOut className="w-4 h-4" />
-                      <span>Sair</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <SidebarMenuButton onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                  {!collapsed && <span>Sair</span>}
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
