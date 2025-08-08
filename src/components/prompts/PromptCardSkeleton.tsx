@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PromptCardSkeleton() {
+export default function PromptCardSkeleton() {
   return (
     <Card className="glass">
       <CardContent className="p-6">

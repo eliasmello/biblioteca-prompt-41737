@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PromptCard } from "@/components/prompts/PromptCard";
-import { PromptCardSkeleton } from "@/components/prompts/PromptCardSkeleton";
+import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
 import ImportDialog from "@/components/prompts/ImportDialog";
 import { usePrompts } from "@/hooks/usePrompts";
