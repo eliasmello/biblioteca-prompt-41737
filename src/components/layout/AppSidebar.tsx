@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Search,
@@ -35,10 +35,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Prompts", url: "/prompts", icon: FileText },
-  { title: "Categories", url: "/categories", icon: FolderOpen },
-  { title: "Favorites", url: "/favorites", icon: Star },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Categorias", url: "/categories", icon: FolderOpen },
+  { title: "Favoritos", url: "/favorites", icon: Star },
 ];
 
 const adminItems = [
@@ -49,11 +49,21 @@ const adminItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { profile, signOut } = useAuth();
-  const { importPrompts, refetch } = usePrompts();
+  const { prompts, importPrompts, refetch } = usePrompts();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   const [isImporting, setIsImporting] = useState(false);
+  
+  const favoritesCount = useMemo(() => prompts.filter((p) => p.isFavorite).length, [prompts]);
+  const categoryStats = useMemo(() => {
+    const counts = new Map<string, number>();
+    prompts.forEach((p) => {
+      const name = (p.category || '').trim();
+      if (name) counts.set(name, (counts.get(name) || 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [prompts]);
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -107,21 +117,6 @@ export function AppSidebar() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        {!collapsed && (
-          <div className="p-4 space-y-2">
-            <ImportDialog onImport={handleImport} isImporting={isImporting}>
-              <Button size="sm" className="w-full justify-start gap-2" variant="default">
-                <Upload className="w-4 h-4" />
-                Importar Prompts
-              </Button>
-            </ImportDialog>
-            <Button size="sm" className="w-full justify-start gap-2" variant="outline">
-              <Search className="w-4 h-4" />
-              Quick Search
-            </Button>
-          </div>
-        )}
 
         {/* Main Navigation */}
         <SidebarGroup>
@@ -139,6 +134,9 @@ export function AppSidebar() {
                     >
                       <item.icon className="w-4 h-4" />
                       {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && item.title === "Favoritos" && (
+                        <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">{favoritesCount}</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -167,6 +165,12 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                  {!collapsed && <span>Sair</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -179,30 +183,39 @@ export function AppSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span>Diorama</span>
-                    <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">24</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span>Portrait</span>
-                    <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">18</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <span>Landscape</span>
-                    <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">12</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {categoryStats.length === 0 ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      <div className="w-3 h-3 rounded-full bg-muted-foreground/30"></div>
+                      <span>Nenhuma categoria</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  categoryStats.map(([name, count]) => (
+                    <SidebarMenuItem key={name}>
+                      <SidebarMenuButton>
+                        <div className="w-3 h-3 rounded-full bg-muted-foreground/30"></div>
+                        <span>{name}</span>
+                        <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">{count}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+        )}
+
+        {/* Import */}
+        {!collapsed && (
+          <div className="p-4 pt-0 space-y-2">
+            <ImportDialog onImport={handleImport} isImporting={isImporting}>
+              <Button size="sm" className="w-full justify-start gap-2" variant="default">
+                <Upload className="w-4 h-4" />
+                Importar Prompts
+              </Button>
+            </ImportDialog>
+          </div>
         )}
 
         {/* User Profile & Logout */}
@@ -213,12 +226,6 @@ export function AppSidebar() {
                 <SidebarMenuButton>
                   <User className="w-4 h-4" />
                   {!collapsed && <span>{profile?.name || 'Usuário'}</span>}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={signOut}>
-                  <LogOut className="w-4 h-4" />
-                  {!collapsed && <span>Sair</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
