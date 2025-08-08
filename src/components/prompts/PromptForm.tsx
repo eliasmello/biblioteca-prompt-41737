@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageIcon, Upload, X } from 'lucide-react';
 import { Prompt } from '@/types/prompt';
+import CategorySelect from '@/components/prompts/CategorySelect';
 
 const promptSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -124,10 +125,10 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
-              <Input
-                id="category"
+              <CategorySelect
+                value={form.watch('category') || ''}
+                onChange={(v) => form.setValue('category', v, { shouldDirty: true })}
                 placeholder="Ex: Diorama"
-                {...form.register('category')}
               />
             </div>
 
