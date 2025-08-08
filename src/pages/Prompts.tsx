@@ -75,7 +75,6 @@ export default function Prompts() {
     const prompt = prompts.find(p => p.id === id);
     if (prompt) {
       await updatePrompt(id, { isFavorite: !prompt.isFavorite });
-      refetch();
     }
   };
 
@@ -94,7 +93,6 @@ export default function Prompts() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este prompt?')) {
       await deletePrompt(id);
-      refetch();
     }
   };
 
@@ -102,7 +100,6 @@ export default function Prompts() {
     setIsImporting(true);
     try {
       await importPrompts(content);
-      await refetch();
       toast({
         title: "Sucesso!",
         description: "Prompts importados com sucesso.",

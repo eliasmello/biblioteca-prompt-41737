@@ -81,14 +81,29 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
+      // Add to local state instead of refetching
+      const mappedData = {
+        ...data,
+        styleTags: data.style_tags || [],
+        subjectTags: data.subject_tags || [],
+        createdBy: data.created_by,
+        updatedBy: data.updated_by,
+        isFavorite: data.is_favorite,
+        usageCount: data.usage_count,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        previewImage: data.preview_image || null
+      };
+      
+      setPrompts(prev => [mappedData, ...prev]);
+      
       toast({
         title: "Prompt criado!",
         description: "Prompt adicionado com sucesso."
       });
-      await fetchPrompts();
-      return { data };
+      return { data: mappedData };
     }
-  }, [user, toast, fetchPrompts]);
+  }, [user, toast]);
 
   const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>) => {
     if (!user) return { error: 'User not authenticated' };
@@ -124,14 +139,29 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
+      // Update local state instead of refetching
+      const mappedData = {
+        ...data,
+        styleTags: data.style_tags || [],
+        subjectTags: data.subject_tags || [],
+        createdBy: data.created_by,
+        updatedBy: data.updated_by,
+        isFavorite: data.is_favorite,
+        usageCount: data.usage_count,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        previewImage: data.preview_image || null
+      };
+      
+      setPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
+      
       toast({
         title: "Prompt atualizado!",
         description: "Prompt modificado com sucesso."
       });
-      await fetchPrompts();
-      return { data };
+      return { data: mappedData };
     }
-  }, [toast, fetchPrompts]);
+  }, [user, toast]);
 
   const deletePrompt = useCallback(async (id: string) => {
     if (!user) return { error: 'User not authenticated' };
@@ -149,14 +179,16 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
+      // Update local state instead of refetching
+      setPrompts(prev => prev.filter(p => p.id !== id));
+      
       toast({
         title: "Prompt deletado!",
         description: "Prompt removido com sucesso."
       });
-      await fetchPrompts();
       return { success: true };
     }
-  }, [toast, fetchPrompts]);
+  }, [user, toast]);
 
   const importPrompts = useCallback(async (content: string) => {
     if (!user) return { error: 'User not authenticated' };
