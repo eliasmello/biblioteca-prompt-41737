@@ -40,6 +40,13 @@ const App = () => (
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
+                  <Prompts />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout>
                   <Dashboard />
                 </Layout>
               </ProtectedRoute>
@@ -76,13 +83,6 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <div className="p-8"><h1 className="text-2xl font-bold">Favorites</h1><p className="text-muted-foreground">Favorite prompts coming soon...</p></div>
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute>
-                <Layout>
-                  <div className="p-8"><h1 className="text-2xl font-bold">Analytics</h1><p className="text-muted-foreground">Analytics dashboard coming soon...</p></div>
                 </Layout>
               </ProtectedRoute>
             } />

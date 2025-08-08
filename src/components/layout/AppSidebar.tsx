@@ -10,7 +10,7 @@ import {
   User,
   Plus,
   Sparkles,
-  BarChart3,
+  
   Lightbulb,
   LogOut,
   Upload
@@ -35,11 +35,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Prompts", url: "/prompts", icon: FileText },
   { title: "Categories", url: "/categories", icon: FolderOpen },
   { title: "Favorites", url: "/favorites", icon: Star },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
 ];
 
 const adminItems = [
