@@ -17,7 +17,11 @@ export const usePrompts = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('prompts')
-      .select('*')
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -38,7 +42,7 @@ export const usePrompts = () => {
         usageCount: prompt.usage_count,
         createdAt: prompt.created_at,
         updatedAt: prompt.updated_at,
-        previewImage: (prompt as any).preview_image || null
+        previewImage: null
       }));
       setPrompts(mappedPrompts);
     }
@@ -70,7 +74,11 @@ export const usePrompts = () => {
     const { data, error } = await supabase
       .from('prompts')
       .insert([dbPrompt])
-      .select()
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at
+      `)
       .single();
 
     if (error) {
@@ -92,7 +100,7 @@ export const usePrompts = () => {
         usageCount: data.usage_count,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
-        previewImage: data.preview_image || null
+        previewImage: null
       };
       
       setPrompts(prev => [mappedData, ...prev]);
@@ -128,7 +136,11 @@ export const usePrompts = () => {
       .from('prompts')
       .update(dbUpdates)
       .eq('id', id)
-      .select()
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at
+      `)
       .single();
 
     if (error) {
@@ -150,7 +162,7 @@ export const usePrompts = () => {
         usageCount: data.usage_count,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
-        previewImage: data.preview_image || null
+        previewImage: null
       };
       
       setPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
@@ -313,7 +325,11 @@ export const usePrompts = () => {
     const { data, error } = await supabase
       .from('prompts')
       .insert(dbPrompts)
-      .select();
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at
+      `);
 
     if (error) {
       toast({
