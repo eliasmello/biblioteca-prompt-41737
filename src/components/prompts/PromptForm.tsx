@@ -1,3 +1,4 @@
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -46,21 +47,20 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
     }
   });
 
-  // Reset form when prompt changes
+  // Reset form apenas quando o ID do prompt mudar (evita reset enquanto o usuário digita)
   useEffect(() => {
-    if (prompt) {
-      form.reset({
-        title: prompt.title || '',
-        category: prompt.category || '',
-        subcategory: prompt.subcategory || '',
-        content: prompt.content || '',
-        description: prompt.description || '',
-        number: prompt.number || undefined,
-        previewImage: prompt.previewImage || ''
-      });
-      setPreviewImage(prompt.previewImage || null);
-    }
-  }, [prompt, form]);
+    if (!prompt?.id) return;
+    form.reset({
+      title: prompt.title || '',
+      category: prompt.category || '',
+      subcategory: prompt.subcategory || '',
+      content: prompt.content || '',
+      description: prompt.description || '',
+      number: prompt.number || undefined,
+      previewImage: prompt.previewImage || ''
+    });
+    setPreviewImage(prompt.previewImage || null);
+  }, [prompt?.id, form]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
