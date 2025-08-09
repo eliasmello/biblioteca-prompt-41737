@@ -371,6 +371,7 @@ export default function Prompts() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               loadPreview={fetchPreviewImage}
+              variant={viewMode}
             />
           ))}
         </div>

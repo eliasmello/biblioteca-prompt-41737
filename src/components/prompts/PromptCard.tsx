@@ -13,9 +13,10 @@ interface PromptCardProps {
   onEdit?: (id: string, promptData?: { content: string; previewImage?: string | null }) => void;
   onDelete?: (id: string) => void;
   loadPreview: (id: string) => void;
+  variant?: 'grid' | 'list';
 }
 
-export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview }: PromptCardProps) {
+export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview, variant = 'grid' }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
   const [requestedImage, setRequestedImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,10 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
         <div className="mb-4 relative">
           <div 
             ref={previewRef}
-            className="aspect-video bg-muted rounded-lg overflow-hidden border border-border/50"
+            className={cn(
+              variant === 'list' ? 'h-24 sm:h-28' : 'aspect-video',
+              'bg-muted rounded-lg overflow-hidden border border-border/50'
+            )}
           >
             {previewImage ? (
               <img 
