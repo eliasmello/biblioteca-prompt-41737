@@ -65,19 +65,36 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecione apenas arquivos de imagem.');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Arquivo muito grande. Máximo 5MB.');
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         setPreviewImage(result);
-        form.setValue('previewImage', result);
+        form.setValue('previewImage', result, { shouldDirty: true });
+      };
+      reader.onerror = () => {
+        alert('Erro ao ler o arquivo. Tente novamente.');
       };
       reader.readAsDataURL(file);
     }
+    // Reset input value to allow same file selection
+    event.target.value = '';
   };
 
   const removeImage = () => {
     setPreviewImage(null);
-    form.setValue('previewImage', '');
+    form.setValue('previewImage', '', { shouldDirty: true });
   };
 
   const handleFormSubmit = (data: PromptFormData) => {

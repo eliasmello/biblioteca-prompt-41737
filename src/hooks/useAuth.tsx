@@ -52,22 +52,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let profileFetched = false;
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth event:', event, 'Session:', !!session);
+        // Only log important events, not every session check
+        if (event !== 'TOKEN_REFRESHED') {
+          console.log('Auth event:', event, 'Session:', !!session);
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Set loading false immediately, fetch profile in background
+        if (session?.user && !profileFetched) {
           setLoading(false);
+          profileFetched = true;
           
-          // Fetch profile in background without blocking UI
+          // Fetch profile only once per session
           fetchProfile(session.user.id).then(profileData => {
             if (mounted) {
               setProfile(profileData as Profile);
@@ -75,16 +79,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }).catch(error => {
             console.error('Error fetching profile:', error);
           });
-        } else {
+        } else if (!session?.user) {
           setProfile(null);
           setLoading(false);
+          profileFetched = false;
         }
-
-        // No login toasts - they cause repetitive notifications
       }
     );
 
-    // Check for existing session
+    // Check for existing session only once
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -99,11 +102,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Set loading false immediately
+        if (session?.user && !profileFetched) {
           setLoading(false);
+          profileFetched = true;
           
-          // Fetch profile in background
           fetchProfile(session.user.id).then(profileData => {
             if (mounted) {
               setProfile(profileData as Profile);
@@ -126,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []); // Remove toast dependency to prevent unnecessary re-runs
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
