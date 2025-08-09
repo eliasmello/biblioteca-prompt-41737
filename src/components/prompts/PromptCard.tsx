@@ -60,13 +60,13 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
       className="group cursor-pointer hover:shadow-lg transition-all duration-200 glass relative overflow-hidden"
       onClick={() => onPreview(prompt.id)}
     >
-      <CardContent className="p-6">
+      <CardContent className={cn("p-6", variant === 'list' && "grid grid-cols-[auto_1fr] gap-4 sm:gap-6 items-start")}>
         {/* Image preview */}
-        <div className="mb-4 relative">
+        <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
           <div 
             ref={previewRef}
             className={cn(
-              variant === 'list' ? 'h-24 sm:h-28' : 'aspect-video',
+              variant === 'list' ? 'h-24 sm:h-28 md:h-32 w-full' : 'aspect-video',
               'bg-muted rounded-lg overflow-hidden border border-border/50'
             )}
           >
@@ -149,7 +149,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
 
         {/* Header */}
         {variant === 'list' ? (
-          <div className="mb-3">
+          <div className="mb-3 col-start-2">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -248,13 +248,13 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
         )}
 
         {/* Content preview */}
-        <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+        <p className={cn("text-sm text-muted-foreground line-clamp-3 mb-4", variant === 'list' && "col-start-2")}>
           {cleanPromptContent(prompt.content)}
         </p>
 
         {/* Tags */}
         {(prompt.styleTags?.length > 0 || prompt.subjectTags?.length > 0) && (
-          <div className="flex flex-wrap gap-1 mb-4">
+          <div className={cn("flex flex-wrap gap-1 mb-4", variant === 'list' && "col-start-2")}>
             {prompt.styleTags?.slice(0, 3).map((tag: string) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
@@ -274,7 +274,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
         )}
 
         {/* Usage count and date */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className={cn("flex items-center justify-between text-xs text-muted-foreground", variant === 'list' && "col-start-2")}>
           <div className="flex items-center gap-1">
             <Eye className="w-3 h-3" />
             {prompt.usageCount || 0} uses
