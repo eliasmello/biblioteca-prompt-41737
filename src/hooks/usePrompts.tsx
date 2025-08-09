@@ -15,24 +15,26 @@ export const usePrompts = () => {
     if (!user) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('prompts')
+    try {
+      // Primeira consulta: buscar metadados dos prompts SEM as imagens (para evitar timeout)
+      const { data: prompts, error } = await supabase
+       .from('prompts')
        .select(`
          id, title, category, subcategory, content, description, number,
          tags, keywords, style_tags, subject_tags, created_by, updated_by,
-         is_favorite, usage_count, created_at, updated_at, preview_image
+         is_favorite, usage_count, created_at, updated_at
        `)
        .order('created_at', { ascending: false });
 
-    if (error) {
-      toast({
-        title: "Erro ao carregar prompts",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      // Map database fields to frontend fields
-      const mappedPrompts = (data || []).map(prompt => ({
+      if (error) {
+        toast({
+          title: "Erro ao carregar prompts",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        // Map database fields to frontend fields
+        const mappedPrompts = (prompts || []).map(prompt => ({
         ...prompt,
         styleTags: prompt.style_tags || [],
         subjectTags: prompt.subject_tags || [],
@@ -42,9 +44,47 @@ export const usePrompts = () => {
         usageCount: prompt.usage_count,
         createdAt: prompt.created_at,
         updatedAt: prompt.updated_at,
-        previewImage: prompt.preview_image
+        previewImage: null // Será carregada sob demanda
       }));
-      setPrompts(mappedPrompts);
+      
+      // Segunda consulta: buscar imagens em lotes pequenos (máximo 5 por vez para evitar timeout)
+      const promptsWithImages = await Promise.allSettled(
+        mappedPrompts.slice(0, 5).map(async (prompt) => {
+          try {
+            const { data: imageData } = await supabase
+              .from('prompts')
+              .select('id, preview_image')
+              .eq('id', prompt.id)
+              .single();
+            
+            return {
+              ...prompt,
+              previewImage: imageData?.preview_image || null
+            };
+          } catch {
+            return prompt; // Retorna sem imagem se der erro
+          }
+        })
+      );
+
+      // Atualiza os primeiros prompts com as imagens carregadas
+      const finalPrompts = mappedPrompts.map((prompt, index) => {
+        if (index < 5) {
+          const result = promptsWithImages[index];
+          return result.status === 'fulfilled' ? result.value : prompt;
+        }
+        return prompt;
+      });
+
+        setPrompts(finalPrompts);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar prompts:', err);
+      toast({
+        title: "Erro ao carregar prompts",
+        description: "Falha na conexão com o banco de dados",
+        variant: "destructive"
+      });
     }
     setLoading(false);
   }, [user, toast]);
