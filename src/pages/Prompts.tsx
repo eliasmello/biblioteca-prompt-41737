@@ -53,10 +53,22 @@ export default function Prompts() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('recent');
+  const [sortBy, setSortBy] = useState(() => {
+    try {
+      return localStorage.getItem('prompts.sortBy') || 'numberAsc';
+    } catch {
+      return 'numberAsc';
+    }
+  });
   const [minNumber, setMinNumber] = useState<string>('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('prompts.sortBy', sortBy);
+    } catch {}
+  }, [sortBy]);
 
   // Get unique categories from prompts
   const categories = [
