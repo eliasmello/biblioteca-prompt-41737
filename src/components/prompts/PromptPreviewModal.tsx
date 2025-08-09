@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Star, Edit, X } from "lucide-react";
+import { Copy, Star, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PromptPreviewModalProps {
@@ -26,6 +26,7 @@ interface PromptPreviewModalProps {
     isFavorite: boolean;
     usageCount: number;
     createdAt: string;
+    previewImage?: string | null;
   } | null;
   onToggleFavorite: (id: string) => void;
   onEdit: (id: string) => void;
@@ -104,6 +105,19 @@ export function PromptPreviewModal({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Preview Image */}
+          {prompt.previewImage && (
+            <div className="rounded-lg overflow-hidden border border-border">
+              <img
+                src={prompt.previewImage}
+                alt={`Preview do prompt ${prompt.title}`}
+                className="w-full h-64 object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          )}
+
           {/* Content */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">

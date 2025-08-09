@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
 import PromptForm from '@/components/prompts/PromptForm';
 import { usePrompts } from '@/hooks/usePrompts';
@@ -68,10 +69,34 @@ export default function PromptEditor() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-24" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+
+        {/* Form skeleton */}
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          <Skeleton className="h-7 w-40" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <div className="flex justify-end gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-28" />
+          </div>
         </div>
       </div>
     );
