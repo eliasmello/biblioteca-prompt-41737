@@ -43,7 +43,8 @@ export default function Prompts() {
     updatePrompt, 
     deletePrompt, 
     importPrompts, 
-    refetch 
+    refetch,
+    fetchPreviewImage
   } = usePrompts();
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -369,6 +370,7 @@ export default function Prompts() {
               onCopy={handleCopy}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              loadPreview={fetchPreviewImage}
             />
           ))}
         </div>

@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface PromptCardProps {
   prompt: any;
@@ -12,10 +12,13 @@ interface PromptCardProps {
   onCopy: (content: string) => void;
   onEdit?: (id: string, promptData?: { content: string; previewImage?: string | null }) => void;
   onDelete?: (id: string) => void;
+  loadPreview: (id: string) => void;
 }
 
-export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
+export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
+  const [requestedImage, setRequestedImage] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
@@ -25,6 +28,26 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
   useEffect(() => {
     setPreviewImage(prompt.previewImage || null);
   }, [prompt.previewImage]);
+
+  // Busca a imagem de preview apenas quando o card entrar na viewport
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el || previewImage || requestedImage) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && !previewImage && !requestedImage) {
+          loadPreview(prompt.id);
+          setRequestedImage(true);
+          observer.disconnect();
+          break;
+        }
+      }
+    }, { rootMargin: '200px' });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [previewImage, requestedImage, loadPreview, prompt.id]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,6 +63,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
         {/* Image preview */}
         <div className="mb-4 relative">
           <div 
+            ref={previewRef}
             className="aspect-video bg-muted rounded-lg overflow-hidden border border-border/50"
           >
             {previewImage ? (
