@@ -60,14 +60,14 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
       className="group cursor-pointer hover:shadow-lg transition-all duration-200 glass relative overflow-hidden"
       onClick={() => onPreview(prompt.id)}
     >
-      <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-center md:items-start")}>
+      <CardContent className={cn("p-6 md:flex md:gap-6 md:items-start", variant === 'list' && "flex gap-4 sm:gap-6 items-start")}>
         {/* Image preview */}
-        <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
+        <div className={cn('relative w-full md:w-48 shrink-0', variant === 'grid' ? 'mb-4 md:mb-0' : 'mb-0')}>
           <div 
             ref={previewRef}
             className={cn(
-              variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
-              'bg-muted rounded-lg overflow-hidden border border-border/50'
+              'w-full bg-muted rounded-lg overflow-hidden border border-border/50',
+              'aspect-video md:aspect-auto md:h-28'
             )}
           >
             {previewImage ? (
@@ -151,7 +151,10 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
           </div>
         )}
 
-        <div className={cn(variant === 'list' && "flex-1 min-w-0")}> 
+        <div className={cn(
+          "md:flex-1 md:min-w-0",
+          variant === 'list' ? "flex-1 min-w-0 md:pl-0 md:border-l-0" : "md:pl-6 md:border-l md:border-border/50"
+        )}>
           {/* Header */}
           {variant === 'list' ? (
             <div className="mb-3">
@@ -163,11 +166,11 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                         #{prompt.number}
                       </Badge>
                     )}
-                    <Badge className="bg-primary text-primary-foreground text-xs">
+                    <Badge className="bg-primary/10 text-primary border-transparent text-xs">
                       {prompt.category}
                     </Badge>
                     {prompt.subcategory && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="bg-foreground/5 text-foreground/80 border-border/50 text-xs">
                         {prompt.subcategory}
                       </Badge>
                     )}
@@ -236,11 +239,11 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                     #{prompt.number}
                   </Badge>
                 )}
-                <Badge className="bg-primary text-primary-foreground text-xs">
+                <Badge className="bg-primary/10 text-primary border-transparent text-xs">
                   {prompt.category}
                 </Badge>
                 {prompt.subcategory && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="bg-foreground/5 text-foreground/80 border-border/50 text-xs">
                     {prompt.subcategory}
                   </Badge>
                 )}
@@ -261,12 +264,12 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
           {(prompt.styleTags?.length > 0 || prompt.subjectTags?.length > 0) && (
             <div className="flex flex-wrap gap-1 mb-4">
               {prompt.styleTags?.slice(0, 3).map((tag: string) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
+                <Badge key={tag} variant="outline" className="bg-primary/10 text-primary border-transparent text-xs">
                   {tag}
                 </Badge>
               ))}
               {prompt.subjectTags?.slice(0, 2).map((tag: string) => (
-                <Badge key={tag} variant="outline" className="text-xs">
+                <Badge key={tag} variant="outline" className="bg-foreground/5 text-foreground/80 border-border/50 text-xs">
                   {tag}
                 </Badge>
               ))}
