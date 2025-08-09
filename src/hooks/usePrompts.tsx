@@ -16,17 +16,18 @@ export const usePrompts = () => {
 
     setLoading(true);
     try {
+      // 1) Buscar prompts sem a coluna pesada (preview_image)
       const pageSize = 50;
       let from = 0;
       let allRows: any[] = [];
-      // Busca paginada para evitar timeouts e payloads gigantes (preview_image pode ser grande)
+
       while (true) {
         const { data: rows, error } = await supabase
           .from('prompts')
           .select(`
             id, title, category, subcategory, content, description, number,
             tags, keywords, style_tags, subject_tags, created_by, updated_by,
-            is_favorite, usage_count, created_at, updated_at, preview_image
+            is_favorite, usage_count, created_at, updated_at
           `)
           .order('created_at', { ascending: false })
           .range(from, from + pageSize - 1);
@@ -43,13 +44,11 @@ export const usePrompts = () => {
         const batch = rows || [];
         allRows = allRows.concat(batch);
 
-        // Se retornou menos que o pageSize, não há mais páginas
         if (batch.length < pageSize) break;
-
         from += pageSize;
       }
 
-      // Mapear campos do banco para o frontend
+      // Mapear campos do banco para o frontend (previewImage fica null por enquanto)
       const mappedPrompts = allRows.map((prompt: any) => ({
         ...prompt,
         styleTags: prompt.style_tags || [],
@@ -60,10 +59,31 @@ export const usePrompts = () => {
         usageCount: prompt.usage_count,
         createdAt: prompt.created_at,
         updatedAt: prompt.updated_at,
-        previewImage: prompt.preview_image || null
+        previewImage: null
       }));
 
       setPrompts(mappedPrompts);
+
+      // 2) Carregar TODAS as imagens em blocos pequenos para evitar timeouts
+      const ids = mappedPrompts.map(p => p.id).filter(Boolean);
+      const chunkSize = 10; // pequeno para não estourar o statement timeout
+
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const { data: imageRows, error: imageError } = await supabase
+          .from('prompts')
+          .select('id, preview_image')
+          .in('id', chunk);
+
+        if (imageError) {
+          console.warn('Falha ao carregar imagens do bloco:', imageError.message);
+          continue;
+        }
+
+        const imgMap = new Map((imageRows || []).map((r: any) => [r.id, r.preview_image || null]));
+        // Atualiza somente os prompts deste bloco
+        setPrompts(prev => prev.map(p => imgMap.has(p.id) ? { ...p, previewImage: imgMap.get(p.id) } : p));
+      }
     } catch (err) {
       console.error('Erro ao buscar prompts:', err);
       toast({
