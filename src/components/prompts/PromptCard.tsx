@@ -60,7 +60,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
       className="group cursor-pointer hover:shadow-lg transition-all duration-200 glass relative overflow-hidden"
       onClick={() => onPreview(prompt.id)}
     >
-      <CardContent className={cn("p-6", variant === 'list' && "grid grid-cols-[auto_1fr] gap-4 sm:gap-6 items-start")}>
+      <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-start")}>
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
           <div 
@@ -147,141 +147,143 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
           </div>
         )}
 
-        {/* Header */}
-        {variant === 'list' ? (
-          <div className="mb-3 col-start-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  {prompt.number && (
-                    <Badge variant="outline" className="font-mono text-xs">
-                      #{prompt.number}
+        <div className={cn(variant === 'list' && "flex-1 min-w-0")}> 
+          {/* Header */}
+          {variant === 'list' ? (
+            <div className="mb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    {prompt.number && (
+                      <Badge variant="outline" className="font-mono text-xs">
+                        #{prompt.number}
+                      </Badge>
+                    )}
+                    <Badge className="bg-primary text-primary-foreground text-xs">
+                      {prompt.category}
                     </Badge>
-                  )}
-                  <Badge className="bg-primary text-primary-foreground text-xs">
-                    {prompt.category}
-                  </Badge>
-                  {prompt.subcategory && (
-                    <Badge variant="outline" className="text-xs">
-                      {prompt.subcategory}
-                    </Badge>
-                  )}
+                    {prompt.subcategory && (
+                      <Badge variant="outline" className="text-xs">
+                        {prompt.subcategory}
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                    {prompt.title}
+                  </h3>
                 </div>
-                <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                  {prompt.title}
-                </h3>
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(prompt.id);
-                  }}
-                  className="w-8 h-8 p-0"
-                >
-                  <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleCopy}
-                  className="w-8 h-8 p-0"
-                >
-                  <Copy className="w-3 h-3" />
-                </Button>
-                {onEdit && (
+                <div className="flex gap-1 shrink-0">
                   <Button
                     size="sm"
                     variant="secondary"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit(prompt.id, {
-                        content: cleanPromptContent(prompt.content),
-                        previewImage: previewImage
-                      });
+                      onToggleFavorite(prompt.id);
                     }}
                     className="w-8 h-8 p-0"
                   >
-                    <Edit className="w-3 h-3" />
+                    <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
                   </Button>
-                )}
-                {onDelete && (
                   <Button
                     size="sm"
-                    variant="destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(prompt.id);
-                    }}
+                    variant="secondary"
+                    onClick={handleCopy}
                     className="w-8 h-8 p-0"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Copy className="w-3 h-3" />
                   </Button>
-                )}
+                  {onEdit && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(prompt.id, {
+                          content: cleanPromptContent(prompt.content),
+                          previewImage: previewImage
+                        });
+                      }}
+                      className="w-8 h-8 p-0"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(prompt.id);
+                      }}
+                      className="w-8 h-8 p-0"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center gap-2">
-              {prompt.number && (
-                <Badge variant="outline" className="font-mono text-xs">
-                  #{prompt.number}
+          ) : (
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center gap-2">
+                {prompt.number && (
+                  <Badge variant="outline" className="font-mono text-xs">
+                    #{prompt.number}
+                  </Badge>
+                )}
+                <Badge className="bg-primary text-primary-foreground text-xs">
+                  {prompt.category}
                 </Badge>
-              )}
-              <Badge className="bg-primary text-primary-foreground text-xs">
-                {prompt.category}
-              </Badge>
-              {prompt.subcategory && (
-                <Badge variant="outline" className="text-xs">
-                  {prompt.subcategory}
+                {prompt.subcategory && (
+                  <Badge variant="outline" className="text-xs">
+                    {prompt.subcategory}
+                  </Badge>
+                )}
+              </div>
+              
+              <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                {prompt.title}
+              </h3>
+            </div>
+          )}
+
+          {/* Content preview */}
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+            {cleanPromptContent(prompt.content)}
+          </p>
+
+          {/* Tags */}
+          {(prompt.styleTags?.length > 0 || prompt.subjectTags?.length > 0) && (
+            <div className="flex flex-wrap gap-1 mb-4">
+              {prompt.styleTags?.slice(0, 3).map((tag: string) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {prompt.subjectTags?.slice(0, 2).map((tag: string) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {(prompt.styleTags?.length > 3 || prompt.subjectTags?.length > 2) && (
+                <Badge variant="secondary" className="text-xs">
+                  +{(prompt.styleTags?.length || 0) + (prompt.subjectTags?.length || 0) - 5} more
                 </Badge>
               )}
             </div>
-            
-            <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-              {prompt.title}
-            </h3>
-          </div>
-        )}
+          )}
 
-        {/* Content preview */}
-        <p className={cn("text-sm text-muted-foreground line-clamp-3 mb-4", variant === 'list' && "col-start-2")}>
-          {cleanPromptContent(prompt.content)}
-        </p>
-
-        {/* Tags */}
-        {(prompt.styleTags?.length > 0 || prompt.subjectTags?.length > 0) && (
-          <div className={cn("flex flex-wrap gap-1 mb-4", variant === 'list' && "col-start-2")}>
-            {prompt.styleTags?.slice(0, 3).map((tag: string) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-            {prompt.subjectTags?.slice(0, 2).map((tag: string) => (
-              <Badge key={tag} variant="outline" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-            {(prompt.styleTags?.length > 3 || prompt.subjectTags?.length > 2) && (
-              <Badge variant="secondary" className="text-xs">
-                +{(prompt.styleTags?.length || 0) + (prompt.subjectTags?.length || 0) - 5} more
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Usage count and date */}
-        <div className={cn("flex items-center justify-between text-xs text-muted-foreground", variant === 'list' && "col-start-2")}>
-          <div className="flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            {prompt.usageCount || 0} uses
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
-            {new Date(prompt.createdAt).toLocaleDateString()}
+          {/* Usage count and date */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {prompt.usageCount || 0} uses
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              {new Date(prompt.createdAt).toLocaleDateString()}
+            </div>
           </div>
         </div>
       </CardContent>
