@@ -16,39 +16,54 @@ export const usePrompts = () => {
 
     setLoading(true);
     try {
-      // Buscar todos os campos incluindo a imagem de preview
-      const { data: rows, error } = await supabase
-        .from('prompts')
-        .select(`
-          id, title, category, subcategory, content, description, number,
-          tags, keywords, style_tags, subject_tags, created_by, updated_by,
-          is_favorite, usage_count, created_at, updated_at, preview_image
-        `)
-        .order('created_at', { ascending: false });
+      const pageSize = 50;
+      let from = 0;
+      let allRows: any[] = [];
+      // Busca paginada para evitar timeouts e payloads gigantes (preview_image pode ser grande)
+      while (true) {
+        const { data: rows, error } = await supabase
+          .from('prompts')
+          .select(`
+            id, title, category, subcategory, content, description, number,
+            tags, keywords, style_tags, subject_tags, created_by, updated_by,
+            is_favorite, usage_count, created_at, updated_at, preview_image
+          `)
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      if (error) {
-        toast({
-          title: "Erro ao carregar prompts",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        // Mapear campos do banco para o frontend
-        const mappedPrompts = (rows || []).map((prompt: any) => ({
-          ...prompt,
-          styleTags: prompt.style_tags || [],
-          subjectTags: prompt.subject_tags || [],
-          createdBy: prompt.created_by,
-          updatedBy: prompt.updated_by,
-          isFavorite: prompt.is_favorite,
-          usageCount: prompt.usage_count,
-          createdAt: prompt.created_at,
-          updatedAt: prompt.updated_at,
-          previewImage: prompt.preview_image || null
-        }));
+        if (error) {
+          toast({
+            title: "Erro ao carregar prompts",
+            description: error.message,
+            variant: "destructive"
+          });
+          break;
+        }
 
-        setPrompts(mappedPrompts);
+        const batch = rows || [];
+        allRows = allRows.concat(batch);
+
+        // Se retornou menos que o pageSize, não há mais páginas
+        if (batch.length < pageSize) break;
+
+        from += pageSize;
       }
+
+      // Mapear campos do banco para o frontend
+      const mappedPrompts = allRows.map((prompt: any) => ({
+        ...prompt,
+        styleTags: prompt.style_tags || [],
+        subjectTags: prompt.subject_tags || [],
+        createdBy: prompt.created_by,
+        updatedBy: prompt.updated_by,
+        isFavorite: prompt.is_favorite,
+        usageCount: prompt.usage_count,
+        createdAt: prompt.created_at,
+        updatedAt: prompt.updated_at,
+        previewImage: prompt.preview_image || null
+      }));
+
+      setPrompts(mappedPrompts);
     } catch (err) {
       console.error('Erro ao buscar prompts:', err);
       toast({
