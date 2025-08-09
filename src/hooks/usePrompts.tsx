@@ -158,7 +158,7 @@ export const usePrompts = () => {
     }
   }, [user, toast]);
 
-  const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>) => {
+  const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>, options?: { silent?: boolean }) => {
     if (!user) return { error: 'User not authenticated' };
 
     const dbUpdates: any = {};
@@ -209,10 +209,12 @@ export const usePrompts = () => {
       
       setPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
       
-      toast({
-        title: "Prompt atualizado!",
-        description: "Prompt modificado com sucesso."
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Prompt atualizado!",
+          description: "Prompt modificado com sucesso."
+        });
+      }
       return { data: mappedData };
     }
   }, [user, toast]);

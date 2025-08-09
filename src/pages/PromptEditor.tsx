@@ -38,11 +38,8 @@ export default function PromptEditor() {
     setIsSubmitting(true);
     try {
       if (isEditing && prompt) {
-        await updatePrompt(prompt.id, data);
-        toast({
-          title: "Sucesso!",
-          description: "Prompt atualizado com sucesso.",
-        });
+        await updatePrompt(prompt.id, data, { silent: true });
+        // Sem toast de sucesso no editor; confirmação fica apenas no card
       } else {
         await createPrompt(data);
         toast({
