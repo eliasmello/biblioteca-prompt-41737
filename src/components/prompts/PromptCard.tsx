@@ -53,6 +53,10 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
     if (prompt.previewImage) {
       setPreviewImage(prompt.previewImage);
       setImageLoaded(true);
+    } else {
+      // Se não tem imagem, resetar estado
+      setPreviewImage(null);
+      setImageLoaded(false);
     }
   }, [prompt.previewImage]);
 
