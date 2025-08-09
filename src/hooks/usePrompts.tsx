@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
@@ -10,18 +10,21 @@ export const usePrompts = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const isFetchingRef = useRef(false);
 
   const fetchPrompts = useCallback(async () => {
     if (!user) return;
+    if (isFetchingRef.current) return;
 
+    isFetchingRef.current = true;
     setLoading(true);
     try {
-      // Buscar prompts sem a coluna pesada (preview_image) e ir exibindo por lote
-      const pageSize = 50;
+      // Buscar prompts sem a coluna pesada (preview_image) e montar tudo em memória
+      const pageSize = 100;
       let from = 0;
 
-      // Limpa a lista para evitar sobreposição ao refazer a busca
-      setPrompts([]);
+      const seen = new Set<string>();
+      const all: Prompt[] = [];
 
       while (true) {
         const { data: rows, error } = await supabase
@@ -44,9 +47,7 @@ export const usePrompts = () => {
         }
 
         const batch = rows || [];
-
-        // Mapeia o lote atual e já exibe na tela
-        const mappedBatch = batch.map((prompt: any) => ({
+        const mappedBatch: Prompt[] = batch.map((prompt: any) => ({
           ...prompt,
           styleTags: prompt.style_tags || [],
           subjectTags: prompt.subject_tags || [],
@@ -59,11 +60,18 @@ export const usePrompts = () => {
           previewImage: null
         }));
 
-        setPrompts(prev => [...prev, ...mappedBatch]);
+        for (const p of mappedBatch) {
+          if (!seen.has(p.id)) {
+            seen.add(p.id);
+            all.push(p);
+          }
+        }
 
         if (batch.length < pageSize) break;
         from += pageSize;
       }
+
+      setPrompts(all);
     } catch (err) {
       console.error('Erro ao buscar prompts:', err);
       toast({
@@ -71,8 +79,10 @@ export const usePrompts = () => {
         description: "Falha na conexão com o banco de dados",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
     }
-    setLoading(false);
   }, [user, toast]);
 
   const createPrompt = useCallback(async (promptData: Partial<Prompt>) => {
