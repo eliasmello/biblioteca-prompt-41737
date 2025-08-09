@@ -373,6 +373,48 @@ export const usePrompts = () => {
     }
   }, []);
 
+  const getPromptById = useCallback(async (id: string): Promise<Prompt | undefined> => {
+    try {
+      const { data, error } = await supabase
+        .from('prompts')
+        .select(`
+          id, title, category, subcategory, content, description, number,
+          tags, keywords, style_tags, subject_tags, created_by, updated_by,
+          is_favorite, usage_count, created_at, updated_at, preview_image
+        `)
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return undefined;
+
+      const mapped: Prompt = {
+        id: data.id,
+        title: data.title,
+        category: data.category,
+        subcategory: data.subcategory || undefined,
+        content: data.content,
+        description: data.description || undefined,
+        number: data.number,
+        tags: data.tags || [],
+        keywords: data.keywords || [],
+        styleTags: data.style_tags || [],
+        subjectTags: data.subject_tags || [],
+        createdBy: data.created_by,
+        updatedBy: data.updated_by,
+        isFavorite: data.is_favorite,
+        usageCount: data.usage_count,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        previewImage: data.preview_image ?? null,
+      };
+      return mapped;
+    } catch (e) {
+      console.error('Erro ao buscar prompt por ID:', e);
+      return undefined;
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
       fetchPrompts();
@@ -387,8 +429,9 @@ export const usePrompts = () => {
     deletePrompt,
     importPrompts,
     refetch: fetchPrompts,
-    fetchPreviewImage
-  }), [prompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts, fetchPreviewImage]);
+    fetchPreviewImage,
+    getPromptById
+  }), [prompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts, fetchPreviewImage, getPromptById]);
 
   return value;
 };

@@ -12,10 +12,11 @@ export default function PromptEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
-  const { prompts, createPrompt, updatePrompt, loading, fetchPreviewImage } = usePrompts();
+  const { prompts, createPrompt, updatePrompt, loading, fetchPreviewImage, getPromptById } = usePrompts();
   
   const [prompt, setPrompt] = useState<Prompt | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingPrompt, setIsFetchingPrompt] = useState(false);
 
   const isEditing = Boolean(id);
 
@@ -31,15 +32,32 @@ export default function PromptEditor() {
       if (!foundPrompt.previewImage) {
         fetchPreviewImage(foundPrompt.id);
       }
-    } else {
-      toast({
-        title: "Erro",
-        description: "Prompt não encontrado.",
-        variant: "destructive",
-      });
-      navigate('/prompts');
+      return;
     }
-  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage, loading]);
+
+    let isMounted = true;
+    setIsFetchingPrompt(true);
+    (async () => {
+      const fetched = await getPromptById(id);
+      if (!isMounted) return;
+      if (fetched) {
+        setPrompt(fetched);
+        if (!fetched.previewImage) {
+          fetchPreviewImage(fetched.id);
+        }
+      } else {
+        toast({
+          title: "Erro",
+          description: "Prompt não encontrado.",
+          variant: "destructive",
+        });
+        navigate('/prompts');
+      }
+      setIsFetchingPrompt(false);
+    })();
+
+    return () => { isMounted = false; };
+  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage, loading, getPromptById]);
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
@@ -56,9 +74,12 @@ export default function PromptEditor() {
       }
       navigate('/prompts');
     } catch (error) {
+      const errMsg = (error as any)?.message ? String((error as any).message) : String(error);
       toast({
         title: "Erro",
-        description: isEditing ? "Erro ao atualizar prompt." : "Erro ao criar prompt.",
+        description: /permission/i.test(errMsg)
+          ? "Você não tem permissão para editar este prompt."
+          : (isEditing ? "Erro ao atualizar prompt." : "Erro ao criar prompt."),
         variant: "destructive",
       });
     } finally {
@@ -96,6 +117,35 @@ export default function PromptEditor() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-32 w-full" />
+          <div className="flex justify-end gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isFetchingPrompt) {
+    return (
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-24" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+
+        {/* Form skeleton - reduzido para busca individual */}
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          <Skeleton className="h-7 w-40" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-48 w-full" />
           <div className="flex justify-end gap-2">
             <Skeleton className="h-10 w-28" />
             <Skeleton className="h-10 w-28" />
