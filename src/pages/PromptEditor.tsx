@@ -20,23 +20,26 @@ export default function PromptEditor() {
   const isEditing = Boolean(id);
 
   useEffect(() => {
-    if (isEditing && prompts.length > 0) {
-      const foundPrompt = prompts.find(p => p.id === id);
-      if (foundPrompt) {
-        setPrompt(foundPrompt);
-        if (!foundPrompt.previewImage) {
-          fetchPreviewImage(foundPrompt.id);
-        }
-      } else {
-        toast({
-          title: "Erro",
-          description: "Prompt não encontrado.",
-          variant: "destructive",
-        });
-        navigate('/prompts');
+    if (!isEditing || !id) return;
+
+    // Aguarda o carregamento completo para evitar falso negativo durante a paginação
+    if (loading) return;
+
+    const foundPrompt = prompts.find(p => p.id === id);
+    if (foundPrompt) {
+      setPrompt(foundPrompt);
+      if (!foundPrompt.previewImage) {
+        fetchPreviewImage(foundPrompt.id);
       }
+    } else {
+      toast({
+        title: "Erro",
+        description: "Prompt não encontrado.",
+        variant: "destructive",
+      });
+      navigate('/prompts');
     }
-  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage]);
+  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage, loading]);
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
