@@ -94,7 +94,7 @@ serve(async (req) => {
     const compressedBase64 = await compressImage(originalBase64, 0.4)
     
     return new Response(
-      JSON.stringify({ imageUrl: compressedBase64 }),
+      JSON.stringify({ imageUrl: `data:image/webp;base64,${compressedBase64}` }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
