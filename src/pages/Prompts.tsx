@@ -27,7 +27,8 @@ import {
   Star,
   Download,
   Upload,
-  Settings
+  Settings,
+  Hash
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Prompt } from "@/types/prompt";
@@ -53,6 +54,7 @@ export default function Prompts() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+  const [minNumber, setMinNumber] = useState<string>('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -148,6 +150,22 @@ export default function Prompts() {
           return a.title.localeCompare(b.title);
         case 'favorites':
           return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+        case 'numberAsc': {
+          const aNum = a.number;
+          const bNum = b.number;
+          if (aNum == null && bNum == null) return 0;
+          if (aNum == null) return 1;
+          if (bNum == null) return -1;
+          return aNum - bNum;
+        }
+        case 'numberDesc': {
+          const aNum = a.number;
+          const bNum = b.number;
+          if (aNum == null && bNum == null) return 0;
+          if (aNum == null) return 1;
+          if (bNum == null) return -1;
+          return bNum - aNum;
+        }
         case 'recent':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -166,10 +184,12 @@ export default function Prompts() {
                              (prompt.category && prompt.category.toLowerCase() === selectedCategory);
   
       const matchesFavorites = !showFavoritesOnly || prompt.isFavorite;
+
+      const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
   
-      return matchesSearch && matchesCategory && matchesFavorites;
+      return matchesSearch && matchesCategory && matchesFavorites && matchesMinNumber;
     });
-  }, [sortedPrompts, debouncedSearchQuery, selectedCategory, showFavoritesOnly]);
+  }, [sortedPrompts, debouncedSearchQuery, selectedCategory, showFavoritesOnly, minNumber]);
 
   if (loading) {
     return (
@@ -266,6 +286,19 @@ export default function Prompts() {
               </SelectContent>
             </Select>
 
+            {/* Min Number Filter */}
+            <div className="relative w-[180px]">
+              <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                type="number"
+                min={0}
+                placeholder="A partir do nº"
+                value={minNumber}
+                onChange={(e) => setMinNumber(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[150px]">
@@ -276,6 +309,8 @@ export default function Prompts() {
                 <SelectItem value="recent">Mais Recentes</SelectItem>
                 <SelectItem value="popular">Mais Usados</SelectItem>
                 <SelectItem value="alphabetical">Alfabética</SelectItem>
+                <SelectItem value="numberAsc">Numeração (crescente)</SelectItem>
+                <SelectItem value="numberDesc">Numeração (decrescente)</SelectItem>
                 <SelectItem value="favorites">Favoritos</SelectItem>
               </SelectContent>
             </Select>
@@ -320,6 +355,12 @@ export default function Prompts() {
               <Badge variant="secondary" className="gap-1">
                 Categoria: {categories.find(c => c.value === selectedCategory)?.label}
                 <button onClick={() => setSelectedCategory('all')} className="ml-1">×</button>
+              </Badge>
+            )}
+            {minNumber && (
+              <Badge variant="secondary" className="gap-1">
+                A partir do nº: {minNumber}
+                <button onClick={() => setMinNumber('')} className="ml-1">×</button>
               </Badge>
             )}
             {showFavoritesOnly && (
