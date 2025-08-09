@@ -3,8 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from '@/integrations/supabase/client';
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 interface PromptCardProps {
   prompt: any;
@@ -17,47 +16,14 @@ interface PromptCardProps {
 
 export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(!!prompt.previewImage);
 
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
     return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
   };
 
-  // Função para carregar imagem sob demanda
-  const loadImage = useCallback(async () => {
-    if (imageLoaded || imageLoading) return;
-    
-    setImageLoading(true);
-    try {
-      const { data } = await supabase
-        .from('prompts')
-        .select('preview_image')
-        .eq('id', prompt.id)
-        .single();
-      
-      if (data?.preview_image) {
-        setPreviewImage(data.preview_image);
-        setImageLoaded(true);
-      }
-    } catch (error) {
-      console.log('Erro ao carregar imagem:', error);
-    } finally {
-      setImageLoading(false);
-    }
-  }, [prompt.id, imageLoaded, imageLoading]);
-
   useEffect(() => {
-    // Se já tem imagem, marcar como carregada
-    if (prompt.previewImage) {
-      setPreviewImage(prompt.previewImage);
-      setImageLoaded(true);
-    } else {
-      // Se não tem imagem, resetar estado
-      setPreviewImage(null);
-      setImageLoaded(false);
-    }
+    setPreviewImage(prompt.previewImage || null);
   }, [prompt.previewImage]);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -74,30 +40,19 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
         {/* Image preview */}
         <div className="mb-4 relative">
           <div 
-            className="aspect-video bg-muted rounded-lg overflow-hidden border border-border/50 cursor-pointer group"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!imageLoaded && !imageLoading) {
-                loadImage();
-              }
-            }}
+            className="aspect-video bg-muted rounded-lg overflow-hidden border border-border/50"
           >
-            {imageLoading ? (
-              <div className="w-full h-full flex items-center justify-center bg-muted/50">
-                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : previewImage ? (
+            {previewImage ? (
               <img 
                 src={previewImage} 
-                alt="Prompt preview" 
+                alt={`Preview do prompt ${prompt.title}`} 
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/70 transition-colors">
+              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                 <ImageIcon className="w-8 h-8 mb-2" />
-                <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                  Clique para carregar
-                </span>
+                <span className="text-xs">Sem imagem</span>
               </div>
             )}
           </div>

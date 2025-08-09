@@ -16,15 +16,15 @@ export const usePrompts = () => {
 
     setLoading(true);
     try {
-      // Primeira consulta: buscar metadados dos prompts SEM as imagens (para evitar timeout)
-      const { data: prompts, error } = await supabase
-       .from('prompts')
-       .select(`
-         id, title, category, subcategory, content, description, number,
-         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-         is_favorite, usage_count, created_at, updated_at
-       `)
-       .order('created_at', { ascending: false });
+      // Buscar todos os campos incluindo a imagem de preview
+      const { data: rows, error } = await supabase
+        .from('prompts')
+        .select(`
+          id, title, category, subcategory, content, description, number,
+          tags, keywords, style_tags, subject_tags, created_by, updated_by,
+          is_favorite, usage_count, created_at, updated_at, preview_image
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) {
         toast({
@@ -33,50 +33,21 @@ export const usePrompts = () => {
           variant: "destructive"
         });
       } else {
-        // Map database fields to frontend fields
-        const mappedPrompts = (prompts || []).map(prompt => ({
-        ...prompt,
-        styleTags: prompt.style_tags || [],
-        subjectTags: prompt.subject_tags || [],
-        createdBy: prompt.created_by,
-        updatedBy: prompt.updated_by,
-        isFavorite: prompt.is_favorite,
-        usageCount: prompt.usage_count,
-        createdAt: prompt.created_at,
-        updatedAt: prompt.updated_at,
-        previewImage: null // Será carregada sob demanda
-      }));
-      
-      // Segunda consulta: buscar imagens em lotes pequenos (máximo 5 por vez para evitar timeout)
-      const promptsWithImages = await Promise.allSettled(
-        mappedPrompts.slice(0, 5).map(async (prompt) => {
-          try {
-            const { data: imageData } = await supabase
-              .from('prompts')
-              .select('id, preview_image')
-              .eq('id', prompt.id)
-              .single();
-            
-            return {
-              ...prompt,
-              previewImage: imageData?.preview_image || null
-            };
-          } catch {
-            return prompt; // Retorna sem imagem se der erro
-          }
-        })
-      );
+        // Mapear campos do banco para o frontend
+        const mappedPrompts = (rows || []).map((prompt: any) => ({
+          ...prompt,
+          styleTags: prompt.style_tags || [],
+          subjectTags: prompt.subject_tags || [],
+          createdBy: prompt.created_by,
+          updatedBy: prompt.updated_by,
+          isFavorite: prompt.is_favorite,
+          usageCount: prompt.usage_count,
+          createdAt: prompt.created_at,
+          updatedAt: prompt.updated_at,
+          previewImage: prompt.preview_image || null
+        }));
 
-      // Atualiza os primeiros prompts com as imagens carregadas
-      const finalPrompts = mappedPrompts.map((prompt, index) => {
-        if (index < 5) {
-          const result = promptsWithImages[index];
-          return result.status === 'fulfilled' ? result.value : prompt;
-        }
-        return prompt;
-      });
-
-        setPrompts(finalPrompts);
+        setPrompts(mappedPrompts);
       }
     } catch (err) {
       console.error('Erro ao buscar prompts:', err);
@@ -114,12 +85,12 @@ export const usePrompts = () => {
     const { data, error } = await supabase
       .from('prompts')
       .insert([dbPrompt])
-       .select(`
-         id, title, category, subcategory, content, description, number,
-         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-         is_favorite, usage_count, created_at, updated_at, preview_image
-       `)
-       .single();
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at, preview_image
+      `)
+      .single();
 
     if (error) {
       toast({
@@ -129,7 +100,6 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
-      // Add to local state instead of refetching
       const mappedData = {
         ...data,
         styleTags: data.style_tags || [],
@@ -140,7 +110,7 @@ export const usePrompts = () => {
         usageCount: data.usage_count,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
-         previewImage: data.preview_image
+        previewImage: data.preview_image
       };
       
       setPrompts(prev => [mappedData, ...prev]);
@@ -156,7 +126,6 @@ export const usePrompts = () => {
   const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>) => {
     if (!user) return { error: 'User not authenticated' };
 
-    // Map frontend fields to database fields
     const dbUpdates: any = {};
     
     if (promptData.title !== undefined) dbUpdates.title = promptData.title;
@@ -169,19 +138,18 @@ export const usePrompts = () => {
     if (promptData.usageCount !== undefined) dbUpdates.usage_count = promptData.usageCount;
     if (promptData.previewImage !== undefined) dbUpdates.preview_image = promptData.previewImage;
     
-    // Always update the updated_by field
     dbUpdates.updated_by = user.id;
     
     const { data, error } = await supabase
       .from('prompts')
       .update(dbUpdates)
       .eq('id', id)
-       .select(`
-         id, title, category, subcategory, content, description, number,
-         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-         is_favorite, usage_count, created_at, updated_at, preview_image
-       `)
-       .single();
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at, preview_image
+      `)
+      .single();
 
     if (error) {
       toast({
@@ -191,7 +159,6 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
-      // Update local state instead of refetching
       const mappedData = {
         ...data,
         styleTags: data.style_tags || [],
@@ -231,7 +198,6 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
-      // Update local state instead of refetching
       setPrompts(prev => prev.filter(p => p.id !== id));
       
       toast({
@@ -247,7 +213,6 @@ export const usePrompts = () => {
 
     const promptsToImport: Partial<Prompt>[] = [];
 
-    // Function to create a prompt object
     const createPromptObject = (promptContent: string, index: number) => {
       const parsed = parsePromptContent(promptContent);
       return {
@@ -265,19 +230,15 @@ export const usePrompts = () => {
       };
     };
 
-    // Multiple separation strategies
     const separationStrategies = [
-      // Strategy 1: Look for numbered prompts (1., 2., etc.)
       {
         name: 'numbered',
         pattern: /(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm,
         split: (content: string) => {
           const parts = content.split(/(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm);
-          return parts.filter(part => part.trim().length > 20); // Filter out very short parts
+          return parts.filter(part => part.trim().length > 20);
         }
       },
-      
-      // Strategy 2: Look for markdown-style headers
       {
         name: 'headers',
         pattern: /(?:^|\n)#{1,6}\s+/gm,
@@ -286,8 +247,6 @@ export const usePrompts = () => {
           return parts.filter(part => part.trim().length > 20);
         }
       },
-      
-      // Strategy 3: Look for category markers **[Category]**
       {
         name: 'categories',
         pattern: /\*\*\[.*?\]\*\*/gm,
@@ -296,18 +255,14 @@ export const usePrompts = () => {
           return parts.filter(part => part.trim().length > 20);
         }
       },
-      
-      // Strategy 4: Look for double line breaks (paragraph separation)
       {
         name: 'paragraphs',
         pattern: /\n\s*\n/gm,
         split: (content: string) => {
           const parts = content.split(/\n\s*\n/gm);
-          return parts.filter(part => part.trim().length > 50); // Longer threshold for paragraphs
+          return parts.filter(part => part.trim().length > 50);
         }
       },
-      
-      // Strategy 5: Look for prompt-specific keywords
       {
         name: 'keywords',
         pattern: /(?:^|\n)(?:prompt|scene|description|image|photo|picture|design)[:.]?\s*/gmi,
@@ -318,8 +273,7 @@ export const usePrompts = () => {
       }
     ];
 
-    // Try each strategy and use the one that gives the best results
-    let bestStrategy = null;
+    let bestStrategy: any = null;
     let maxPrompts = 0;
 
     for (const strategy of separationStrategies) {
@@ -334,18 +288,16 @@ export const usePrompts = () => {
       console.log(`Using strategy: ${bestStrategy.name}, found ${maxPrompts} prompts`);
       const parts = bestStrategy.split(content);
       
-      parts.forEach((part, index) => {
-        if (part.trim().length > 20) { // Only process substantial content
+      parts.forEach((part: string, index: number) => {
+        if (part.trim().length > 20) {
           promptsToImport.push(createPromptObject(part, index));
         }
       });
     } else {
-      // Fallback: treat as single prompt
       console.log('No clear separation found, treating as single prompt');
       promptsToImport.push(createPromptObject(content, 0));
     }
 
-    // Map to database format
     const dbPrompts = promptsToImport.map(prompt => ({
       title: prompt.title || 'Untitled',
       category: prompt.category,
@@ -365,11 +317,11 @@ export const usePrompts = () => {
     const { data, error } = await supabase
       .from('prompts')
       .insert(dbPrompts)
-       .select(`
-         id, title, category, subcategory, content, description, number,
-         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-         is_favorite, usage_count, created_at, updated_at, preview_image
-       `);
+      .select(`
+        id, title, category, subcategory, content, description, number,
+        tags, keywords, style_tags, subject_tags, created_by, updated_by,
+        is_favorite, usage_count, created_at, updated_at, preview_image
+      `);
 
     if (error) {
       toast({
@@ -394,7 +346,6 @@ export const usePrompts = () => {
     }
   }, [user, fetchPrompts]);
 
-  // Memoize the return object to prevent unnecessary re-renders
   const value = useMemo(() => ({
     prompts,
     loading,
