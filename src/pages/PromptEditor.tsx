@@ -11,7 +11,7 @@ export default function PromptEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
-  const { prompts, createPrompt, updatePrompt, loading } = usePrompts();
+  const { prompts, createPrompt, updatePrompt, loading, fetchPreviewImage } = usePrompts();
   
   const [prompt, setPrompt] = useState<Prompt | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,6 +23,9 @@ export default function PromptEditor() {
       const foundPrompt = prompts.find(p => p.id === id);
       if (foundPrompt) {
         setPrompt(foundPrompt);
+        if (!foundPrompt.previewImage) {
+          fetchPreviewImage(foundPrompt.id);
+        }
       } else {
         toast({
           title: "Erro",
@@ -32,7 +35,7 @@ export default function PromptEditor() {
         navigate('/prompts');
       }
     }
-  }, [id, prompts, isEditing, toast, navigate]);
+  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage]);
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
