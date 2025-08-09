@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Copy, Star, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import "./PromptPreviewModal.css";
 
 interface PromptPreviewModalProps {
   isOpen: boolean;
@@ -55,7 +57,7 @@ export function PromptPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto no-scrollbar glass">
         <DialogHeader className="relative">
           {/* Action buttons - positioned absolutely in top-right */}
           <div className="absolute top-0 right-0 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1 border border-border/50">
@@ -104,22 +106,10 @@ export function PromptPreviewModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Preview Image */}
-          {prompt.previewImage && (
-            <div className="rounded-lg overflow-hidden border border-border">
-              <img
-                src={prompt.previewImage}
-                alt={`Preview do prompt ${prompt.title}`}
-                className="w-full h-64 object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
-          )}
-
-          {/* Content */}
-          <div className="space-y-4">
+        {/* Grid principal: conteúdo à esquerda; imagem + tags + stats à direita */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Coluna esquerda: Conteúdo */}
+          <div className="lg:col-span-7 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Prompt Content</h3>
               <Button onClick={handleCopy} size="sm" variant="outline">
@@ -127,81 +117,92 @@ export function PromptPreviewModal({
                 Copy to Clipboard
               </Button>
             </div>
-            
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
-              <div className="prompt-highlight whitespace-pre-wrap">
+              <div className="prompt-highlight whitespace-pre-wrap leading-relaxed">
                 {cleanPromptContent(prompt.content)}
               </div>
             </div>
           </div>
 
-          <Separator />
+          {/* Coluna direita: Imagem, Tags, Stats */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Preview Image */}
+            {prompt.previewImage && (
+              <div className="rounded-lg overflow-hidden border border-border">
+                <img
+                  src={prompt.previewImage}
+                  alt={`Preview do prompt ${prompt.title}`}
+                  className="w-full h-56 object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            )}
 
-          {/* Tags */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-foreground">Tags & Metadata</h3>
-            
-            <div className="grid gap-4">
-              {prompt.styleTags.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Style Tags</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {prompt.styleTags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="bg-primary-muted text-primary">
-                        {tag}
-                      </Badge>
-                    ))}
+            {/* Tags */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-foreground">Tags & Metadata</h3>
+              
+              <div className="grid gap-3">
+                {prompt.styleTags.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground mb-1">Style</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {prompt.styleTags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="bg-primary-muted text-primary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {prompt.subjectTags.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Subject Tags</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {prompt.subjectTags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="bg-accent-muted text-accent">
-                        {tag}
-                      </Badge>
-                    ))}
+                {prompt.subjectTags.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground mb-1">Subject</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {prompt.subjectTags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="bg-accent-muted text-accent">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {prompt.tags.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2">General Tags</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {prompt.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
+                {prompt.tags.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground mb-1">General</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {prompt.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          <Separator />
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-primary">{prompt.usageCount}</p>
-              <p className="text-sm text-muted-foreground">Times Used</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-accent">
-                {prompt.content.split(' ').length}
-              </p>
-              <p className="text-sm text-muted-foreground">Words</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-success">
-                {new Date(prompt.createdAt).toLocaleDateString()}
-              </p>
-              <p className="text-sm text-muted-foreground">Created</p>
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-3 text-center rounded-lg border border-border/50 bg-muted/20 p-3">
+              <div className="space-y-1">
+                <p className="text-xl font-bold text-primary">{prompt.usageCount}</p>
+                <p className="text-xs text-muted-foreground">Times Used</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xl font-bold text-accent">
+                  {prompt.content.split(' ').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Words</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xl font-bold text-success">
+                  {new Date(prompt.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-muted-foreground">Created</p>
+              </div>
             </div>
           </div>
         </div>
