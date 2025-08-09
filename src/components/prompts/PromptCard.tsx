@@ -93,80 +93,159 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
           </div>
         )}
 
-        {/* Action buttons - show on hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(prompt.id);
-            }}
-            className="w-8 h-8 p-0"
-          >
-            <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleCopy}
-            className="w-8 h-8 p-0"
-          >
-            <Copy className="w-3 h-3" />
-          </Button>
-          {onEdit && (
+        {/* Action buttons */}
+        {variant === 'grid' && (
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
             <Button
               size="sm"
               variant="secondary"
               onClick={(e) => {
                 e.stopPropagation();
-                onEdit(prompt.id, {
-                  content: cleanPromptContent(prompt.content),
-                  previewImage: previewImage
-                });
+                onToggleFavorite(prompt.id);
               }}
               className="w-8 h-8 p-0"
             >
-              <Edit className="w-3 h-3" />
+              <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
             </Button>
-          )}
-          {onDelete && (
             <Button
               size="sm"
-              variant="destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(prompt.id);
-              }}
+              variant="secondary"
+              onClick={handleCopy}
               className="w-8 h-8 p-0"
             >
-              <Trash2 className="w-3 h-3" />
+              <Copy className="w-3 h-3" />
             </Button>
-          )}
-        </div>
-
-        {/* Header */}
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center gap-2">
-            {prompt.number && (
-              <Badge variant="outline" className="font-mono text-xs">
-                #{prompt.number}
-              </Badge>
+            {onEdit && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(prompt.id, {
+                    content: cleanPromptContent(prompt.content),
+                    previewImage: previewImage
+                  });
+                }}
+                className="w-8 h-8 p-0"
+              >
+                <Edit className="w-3 h-3" />
+              </Button>
             )}
-            <Badge className="bg-primary text-primary-foreground text-xs">
-              {prompt.category}
-            </Badge>
-            {prompt.subcategory && (
-              <Badge variant="outline" className="text-xs">
-                {prompt.subcategory}
-              </Badge>
+            {onDelete && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(prompt.id);
+                }}
+                className="w-8 h-8 p-0"
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
             )}
           </div>
-          
-          <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-            {prompt.title}
-          </h3>
-        </div>
+        )}
+
+        {/* Header */}
+        {variant === 'list' ? (
+          <div className="mb-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  {prompt.number && (
+                    <Badge variant="outline" className="font-mono text-xs">
+                      #{prompt.number}
+                    </Badge>
+                  )}
+                  <Badge className="bg-primary text-primary-foreground text-xs">
+                    {prompt.category}
+                  </Badge>
+                  {prompt.subcategory && (
+                    <Badge variant="outline" className="text-xs">
+                      {prompt.subcategory}
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                  {prompt.title}
+                </h3>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(prompt.id);
+                  }}
+                  className="w-8 h-8 p-0"
+                >
+                  <Star className={cn("w-3 h-3", prompt.isFavorite && "fill-current")} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleCopy}
+                  className="w-8 h-8 p-0"
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+                {onEdit && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(prompt.id, {
+                        content: cleanPromptContent(prompt.content),
+                        previewImage: previewImage
+                      });
+                    }}
+                    className="w-8 h-8 p-0"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(prompt.id);
+                    }}
+                    className="w-8 h-8 p-0"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center gap-2">
+              {prompt.number && (
+                <Badge variant="outline" className="font-mono text-xs">
+                  #{prompt.number}
+                </Badge>
+              )}
+              <Badge className="bg-primary text-primary-foreground text-xs">
+                {prompt.category}
+              </Badge>
+              {prompt.subcategory && (
+                <Badge variant="outline" className="text-xs">
+                  {prompt.subcategory}
+                </Badge>
+              )}
+            </div>
+            
+            <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+              {prompt.title}
+            </h3>
+          </div>
+        )}
 
         {/* Content preview */}
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
