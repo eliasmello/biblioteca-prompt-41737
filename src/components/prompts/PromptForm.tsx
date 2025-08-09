@@ -176,8 +176,13 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                 <div className="relative">
                   <img 
                     src={previewImage} 
-                    alt="Preview" 
+                    alt="Preview do prompt"
                     className="w-full h-48 object-cover rounded-lg"
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                    width={800}
+                    height={192}
                   />
                   <Button
                     type="button"

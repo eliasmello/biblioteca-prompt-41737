@@ -40,7 +40,7 @@ export function useImageGeneration(): UseImageGenerationReturn {
       }
 
       if (data?.imageUrl) {
-        return `data:image/webp;base64,${data.imageUrl}`;
+        return data.imageUrl as string;
       }
 
       return null;

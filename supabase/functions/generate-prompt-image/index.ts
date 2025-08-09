@@ -76,7 +76,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'dall-e-3',
         prompt: prompt.slice(0, 4000), // Limit prompt length
-        size: '1024x1024', // Generate larger first
+        size: '512x512', // Smaller base; we'll compress to 256x256
         quality: 'standard',
         response_format: 'b64_json'
       })
