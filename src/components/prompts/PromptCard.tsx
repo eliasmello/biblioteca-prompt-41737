@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 
 interface PromptCardProps {
   prompt: any;
@@ -16,7 +16,7 @@ interface PromptCardProps {
   variant?: 'grid' | 'list';
 }
 
-export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview, variant = 'grid' }: PromptCardProps) {
+function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview, variant = 'grid' }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
   const [requestedImage, setRequestedImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -60,13 +60,13 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
       className="group cursor-pointer hover:shadow-lg transition-all duration-200 glass relative overflow-hidden"
       onClick={() => onPreview(prompt.id)}
     >
-      <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-start")}>
+      <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-center md:items-start")}>
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
           <div 
             ref={previewRef}
             className={cn(
-              variant === 'list' ? 'h-24 sm:h-28 md:h-32 w-full' : 'aspect-video',
+              variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
               'bg-muted rounded-lg overflow-hidden border border-border/50'
             )}
           >
@@ -76,6 +76,10 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
                 alt={`Preview do prompt ${prompt.title}`} 
                 className="w-full h-full object-cover"
                 loading="lazy"
+                decoding="async"
+                fetchPriority="low"
+                width={112}
+                height={80}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
@@ -168,7 +172,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
                       </Badge>
                     )}
                   </div>
-                  <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                  <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-1 md:line-clamp-2 group-hover:text-primary transition-colors">
                     {prompt.title}
                   </h3>
                 </div>
@@ -249,7 +253,7 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
           )}
 
           {/* Content preview */}
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+          <p className="text-sm text-muted-foreground line-clamp-2 md:line-clamp-3 mb-4">
             {cleanPromptContent(prompt.content)}
           </p>
 
@@ -290,3 +294,5 @@ export function PromptCard({ prompt, onPreview, onToggleFavorite, onCopy, onEdit
     </Card>
   );
 }
+
+export const PromptCard = memo(PromptCardComponent);

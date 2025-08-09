@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,33 +139,37 @@ export default function Prompts() {
   // Debounce search query to improve performance
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const sortedPrompts = [...prompts].sort((a, b) => {
-    switch (sortBy) {
-      case 'popular':
-        return (b.usageCount || 0) - (a.usageCount || 0);
-      case 'alphabetical':
-        return a.title.localeCompare(b.title);
-      case 'favorites':
-        return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
-      case 'recent':
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
+  const sortedPrompts = useMemo(() => {
+    return [...prompts].sort((a, b) => {
+      switch (sortBy) {
+        case 'popular':
+          return (b.usageCount || 0) - (a.usageCount || 0);
+        case 'alphabetical':
+          return a.title.localeCompare(b.title);
+        case 'favorites':
+          return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+        case 'recent':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [prompts, sortBy]);
 
-  const filteredPrompts = sortedPrompts.filter(prompt => {
-    const matchesSearch = debouncedSearchQuery === '' || 
-                         prompt.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                         prompt.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                         (prompt.category && prompt.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'all' || 
-                           (prompt.category && prompt.category.toLowerCase() === selectedCategory);
-
-    const matchesFavorites = !showFavoritesOnly || prompt.isFavorite;
-
-    return matchesSearch && matchesCategory && matchesFavorites;
-  });
+  const filteredPrompts = useMemo(() => {
+    return sortedPrompts.filter(prompt => {
+      const matchesSearch = debouncedSearchQuery === '' || 
+                           prompt.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                           prompt.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                           (prompt.category && prompt.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase()));
+      
+      const matchesCategory = selectedCategory === 'all' || 
+                             (prompt.category && prompt.category.toLowerCase() === selectedCategory);
+  
+      const matchesFavorites = !showFavoritesOnly || prompt.isFavorite;
+  
+      return matchesSearch && matchesCategory && matchesFavorites;
+    });
+  }, [sortedPrompts, debouncedSearchQuery, selectedCategory, showFavoritesOnly]);
 
   if (loading) {
     return (
