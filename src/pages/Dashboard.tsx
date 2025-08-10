@@ -1,6 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { usePrompts } from "@/hooks/usePrompts";
 import {
   FileText,
   FolderOpen,
@@ -15,74 +18,100 @@ import {
 } from "lucide-react";
 
 export default function Dashboard() {
-  const stats = [
+  const navigate = useNavigate();
+  const { prompts, loading } = usePrompts();
+
+  // SEO básico
+  useEffect(() => {
+    document.title = "Dashboard — Visão geral de prompts";
+    const descContent = "Resumo dos prompts cadastrados: total, favoritos, categorias e recentes.";
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', descContent);
+
+    const href = window.location.origin + "/dashboard";
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.href = href;
+  }, []);
+
+  const totalPrompts = prompts.length;
+  const categoriesSet = new Set((prompts || []).map(p => p.category).filter(Boolean));
+  const categoriesCount = categoriesSet.size;
+  const favoritesCount = (prompts || []).filter(p => p.isFavorite).length;
+  const totalUsage = (prompts || []).reduce((sum, p) => sum + (p.usageCount || 0), 0);
+
+  const stats = useMemo(() => ([
     {
-      title: "Total Prompts",
-      value: "127",
-      change: "+12%",
+      title: "Total de Prompts",
+      value: String(totalPrompts),
+      change: "",
       icon: FileText,
       color: "text-primary",
       bgColor: "bg-primary/10"
     },
     {
-      title: "Categories",
-      value: "8",
-      change: "+2",
+      title: "Categorias",
+      value: String(categoriesCount),
+      change: "",
       icon: FolderOpen,
       color: "text-accent",
       bgColor: "bg-accent/10"
     },
     {
-      title: "Favorites",
-      value: "23",
-      change: "+5",
+      title: "Favoritos",
+      value: String(favoritesCount),
+      change: "",
       icon: Star,
       color: "text-yellow-600",
       bgColor: "bg-yellow-100"
     },
     {
-      title: "Usage This Month",
-      value: "1,247",
-      change: "+18%",
+      title: "Total de Usos",
+      value: String(totalUsage),
+      change: "",
       icon: TrendingUp,
       color: "text-success",
       bgColor: "bg-success/10"
     }
-  ];
+  ]), [totalPrompts, categoriesCount, favoritesCount, totalUsage]);
 
-  const recentPrompts = [
-    {
-      id: "1",
-      title: "Diorama / Nature Scene",
-      category: "Diorama",
-      usageCount: 45,
-      createdAt: "2024-01-15",
-      tags: ["hyper-realistic", "nature", "golden hour"]
-    },
-    {
-      id: "2", 
-      title: "Corporate Portrait",
-      category: "Portrait",
-      usageCount: 32,
-      createdAt: "2024-01-14",
-      tags: ["professional", "studio lighting", "business"]
-    },
-    {
-      id: "3",
-      title: "Cyberpunk Cityscape",
-      category: "Landscape",
-      usageCount: 28,
-      createdAt: "2024-01-13",
-      tags: ["futuristic", "neon", "cyberpunk"]
+  const recentPrompts = useMemo(() => {
+    return [...prompts]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        category: p.category || 'Geral',
+        usageCount: p.usageCount || 0,
+        createdAt: p.createdAt,
+        tags: [...(p.styleTags || []), ...(p.subjectTags || [])].slice(0, 3)
+      }));
+  }, [prompts]);
+
+  const topCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of prompts) {
+      const cat = p.category || 'Geral';
+      counts.set(cat, (counts.get(cat) || 0) + 1);
     }
-  ];
+    const colors = ["bg-primary", "bg-accent", "bg-secondary", "bg-muted-foreground"]; // design tokens
+    return Array.from(counts.entries())
+      .map(([name, count], idx) => ({ name, count, color: colors[idx % colors.length] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+  }, [prompts]);
 
-  const topCategories = [
-    { name: "Diorama", count: 24, color: "bg-blue-500" },
-    { name: "Portrait", count: 18, color: "bg-green-500" },
-    { name: "Landscape", count: 12, color: "bg-purple-500" },
-    { name: "Product", count: 8, color: "bg-orange-500" }
-  ];
+  const maxCategoryCount = useMemo(() => Math.max(1, ...topCategories.map(c => c.count)), [topCategories]);
 
   return (
     <div className="space-y-8">
@@ -96,13 +125,13 @@ export default function Dashboard() {
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/prompts')}>
             <Search className="w-4 h-4" />
-            Search
+            Ver Prompts
           </Button>
-          <Button className="gap-2 bg-gradient-primary">
+          <Button className="gap-2 bg-gradient-primary" onClick={() => navigate('/prompts/new')}>
             <Plus className="w-4 h-4" />
-            New Prompt
+            Novo Prompt
           </Button>
         </div>
       </div>
@@ -120,9 +149,11 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-foreground mt-1">
                     {stat.value}
                   </p>
-                  <p className="text-sm text-success mt-1">
-                    {stat.change} from last month
-                  </p>
+                  {stat.change && (
+                    <p className="text-sm text-success mt-1">
+                      {stat.change}
+                    </p>
+                  )}
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -203,7 +234,7 @@ export default function Dashboard() {
                     <div className="w-full bg-muted rounded-full h-2 mt-1">
                       <div
                         className={`h-2 rounded-full ${category.color}`}
-                        style={{ width: `${(category.count / 24) * 100}%` }}
+                        style={{ width: `${(category.count / maxCategoryCount) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -224,15 +255,15 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/prompts/new')}>
               <Plus className="w-6 h-6" />
               Create New Prompt
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/categories')}>
               <FolderOpen className="w-6 h-6" />
               Manage Categories
             </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
+            <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/prompts')}>
               <FileText className="w-6 h-6" />
               Import Prompts
             </Button>
