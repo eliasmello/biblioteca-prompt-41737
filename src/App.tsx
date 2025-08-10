@@ -11,6 +11,7 @@ import PromptEditor from "./pages/PromptEditor";
 import Categories from "./pages/Categories";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient();
 
@@ -82,7 +83,7 @@ const App = () => (
             <Route path="/favorites" element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-8"><h1 className="text-2xl font-bold">Favorites</h1><p className="text-muted-foreground">Favorite prompts coming soon...</p></div>
+                  <Favorites />
                 </Layout>
               </ProtectedRoute>
             } />
