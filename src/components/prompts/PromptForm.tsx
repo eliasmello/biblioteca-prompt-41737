@@ -62,6 +62,14 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
     setPreviewImage(prompt.previewImage || null);
   }, [prompt?.id, form]);
 
+  // Quando apenas a imagem do prompt mudar (ex.: carregada tardiamente),
+  // atualizamos a pré-visualização sem resetar os demais campos do formulário
+  useEffect(() => {
+    if (!prompt) return;
+    setPreviewImage(prompt.previewImage || null);
+    form.setValue('previewImage', prompt.previewImage || '', { shouldDirty: false });
+  }, [prompt?.previewImage, form]);
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
