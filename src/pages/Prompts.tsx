@@ -70,12 +70,13 @@ export default function Prompts() {
     } catch {}
   }, [sortBy]);
 
-  // Get unique categories from prompts
+  // Get unique categories from prompts (alphabetically sorted)
   const categories = [
     { value: "all", label: "Todas as Categorias" },
     ...Array.from(new Set(prompts.map(p => p.category)))
       .filter(Boolean)
       .map(cat => ({ value: cat.toLowerCase(), label: cat }))
+      .sort((a, b) => a.label.localeCompare(b.label))
   ];
 
   const handlePreview = (id: string) => {

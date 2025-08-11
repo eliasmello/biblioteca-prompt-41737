@@ -69,7 +69,14 @@ export default function Categories() {
       }
     });
     
-    setCategories(Array.from(categoryMap.values()));
+    // Sort subcategories and categories alphabetically by default
+    const result = Array.from(categoryMap.values()).map(cat => ({
+      ...cat,
+      subcategories: [...cat.subcategories].sort((a, b) => a.name.localeCompare(b.name))
+    }));
+
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    setCategories(result);
   }, [prompts]);
 
   const handleRenameCategory = async () => {
