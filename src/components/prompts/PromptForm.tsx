@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImageIcon, Upload, X } from 'lucide-react';
+import { ImageIcon, Upload, X, Download } from 'lucide-react';
 import { Prompt } from '@/types/prompt';
 import CategorySelect from '@/components/prompts/CategorySelect';
 
@@ -105,6 +105,39 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
     form.setValue('previewImage', '', { shouldDirty: true });
   };
 
+  const handleDownloadImage = async () => {
+    try {
+      const src = previewImage || form.getValues('previewImage');
+      if (!src) return;
+
+      const slugify = (s: string) =>
+        s
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+
+      const baseName = slugify(prompt?.title || 'prompt-preview') || 'prompt-preview';
+
+      const toBlobAndDownload = async (href: string) => {
+        const res = await fetch(href);
+        const blob = await res.blob();
+        const ext = (blob.type.split('/')[1] || 'png').split(';')[0];
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseName}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      await toBlobAndDownload(src);
+    } catch (err) {
+      console.error('Erro ao baixar imagem de preview', err);
+    }
+  };
+
   const handleFormSubmit = (data: PromptFormData) => {
     onSubmit({
       ...data,
@@ -192,15 +225,26 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                     width={800}
                     height={192}
                   />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={removeImage}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadImage}
+                      aria-label="Baixar imagem de preview"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={removeImage}
+                      aria-label="Remover imagem de preview"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8">
