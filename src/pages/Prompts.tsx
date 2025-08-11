@@ -188,10 +188,15 @@ export default function Prompts() {
 
   const filteredPrompts = useMemo(() => {
     return sortedPrompts.filter(prompt => {
+      const q = debouncedSearchQuery.toLowerCase();
       const matchesSearch = debouncedSearchQuery === '' || 
-                           prompt.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                           prompt.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                           (prompt.category && prompt.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase()));
+                           prompt.title.toLowerCase().includes(q) ||
+                           prompt.content.toLowerCase().includes(q) ||
+                           (prompt.category && prompt.category.toLowerCase().includes(q)) ||
+                           (prompt.tags && prompt.tags.some(t => t.toLowerCase().includes(q))) ||
+                           (prompt.keywords && prompt.keywords.some(t => t.toLowerCase().includes(q))) ||
+                           (prompt.styleTags && prompt.styleTags.some(t => t.toLowerCase().includes(q))) ||
+                           (prompt.subjectTags && prompt.subjectTags.some(t => t.toLowerCase().includes(q)));
       
       const matchesCategory = selectedCategory === 'all' || 
                              (prompt.category && prompt.category.toLowerCase() === selectedCategory);
@@ -277,7 +282,7 @@ export default function Prompts() {
             <div className="relative flex-1 min-w-[300px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Buscar prompts, categorias, conteúdo..."
+                placeholder="Buscar prompts, categorias, conteúdo e tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
