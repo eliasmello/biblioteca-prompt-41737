@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSEO } from "@/hooks/useSEO";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PromptCard } from "@/components/prompts/PromptCard";
@@ -13,27 +14,11 @@ export default function Favorites() {
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // SEO basics for this page
-  useEffect(() => {
-    document.title = "Favoritos — Prompts favoritados";
-    const descContent = "Veja apenas seus prompts marcados como favoritos.";
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', descContent);
-
-    const href = window.location.origin + "/favorites";
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.href = href;
-  }, []);
+  useSEO({
+    title: "Favoritos — Prompts favoritados",
+    description: "Veja apenas seus prompts marcados como favoritos.",
+    canonicalPath: "/favorites",
+  });
 
   const favorites = useMemo(() => prompts.filter((p) => p.isFavorite), [prompts]);
 

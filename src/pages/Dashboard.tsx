@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+import { useSEO } from "@/hooks/useSEO";
 import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
 import {
@@ -21,27 +22,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { prompts, loading } = usePrompts();
 
-  // SEO básico
-  useEffect(() => {
-    document.title = "Dashboard — Visão geral de prompts";
-    const descContent = "Resumo dos prompts cadastrados: total, favoritos, categorias e recentes.";
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', descContent);
-
-    const href = window.location.origin + "/dashboard";
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) {
-      canonical = document.createElement('link');
-      canonical.setAttribute('rel', 'canonical');
-      document.head.appendChild(canonical);
-    }
-    canonical.href = href;
-  }, []);
+  useSEO({
+    title: "Dashboard — Visão geral de prompts",
+    description: "Resumo dos prompts cadastrados: total, favoritos, categorias e recentes.",
+    canonicalPath: "/dashboard",
+  });
 
   const totalPrompts = prompts.length;
   const categoriesSet = new Set((prompts || []).map(p => p.category).filter(Boolean));

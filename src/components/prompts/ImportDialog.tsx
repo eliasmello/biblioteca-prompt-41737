@@ -14,9 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { Upload, FileText, FileSpreadsheet, File } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
-import mammoth from 'mammoth';
-import { getDocument } from 'pdfjs-dist';
 
 interface ImportDialogProps {
   onImport: (content: string) => void;
@@ -64,7 +61,8 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
-          const result = await mammoth.extractRawText({ arrayBuffer });
+          const mammothMod = await import('mammoth');
+          const result = await mammothMod.default.extractRawText({ arrayBuffer });
           resolve(result.value);
         } catch (error) {
           reject(error);
@@ -78,10 +76,11 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
   const processExcelFile = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'array' });
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(data as any, { type: 'array' });
           let allText = '';
           
           workbook.SheetNames.forEach(sheetName => {
@@ -110,13 +109,14 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
       reader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
-          const pdf = await getDocument({ data: arrayBuffer }).promise;
+          const pdfjs = await import('pdfjs-dist');
+          const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           let allText = '';
           
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items
+            const pageText = (textContent.items as any[])
               .map((item: any) => item.str)
               .join(' ');
             allText += pageText + '\n';
