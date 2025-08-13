@@ -50,6 +50,7 @@ export type Database = {
           description: string | null
           id: string
           is_favorite: boolean | null
+          is_public: boolean
           keywords: string[] | null
           number: number | null
           preview_image: string | null
@@ -70,6 +71,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_favorite?: boolean | null
+          is_public?: boolean
           keywords?: string[] | null
           number?: number | null
           preview_image?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_favorite?: boolean | null
+          is_public?: boolean
           keywords?: string[] | null
           number?: number | null
           preview_image?: string | null
@@ -109,7 +112,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_master_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

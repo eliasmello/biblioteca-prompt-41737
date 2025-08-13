@@ -11,12 +11,21 @@ export interface Prompt {
   styleTags: string[];
   subjectTags: string[];
   createdBy: string;
+  created_by: string; // Database field name
   updatedBy: string;
+  updated_by?: string; // Database field name
   isFavorite: boolean;
+  is_favorite?: boolean; // Database field name
   usageCount: number;
+  usage_count?: number; // Database field name
   createdAt: string;
+  created_at?: string; // Database field name
   updatedAt: string;
+  updated_at?: string; // Database field name
   previewImage?: string | null;
+  preview_image?: string | null; // Database field name
+  isPublic?: boolean;
+  is_public?: boolean; // Database field name
 }
 
 export interface ParsedPrompt {

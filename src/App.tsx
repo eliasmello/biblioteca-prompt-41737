@@ -9,6 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import Prompts from "./pages/Prompts";
 import PromptEditor from "./pages/PromptEditor";
 import Categories from "./pages/Categories";
+import MyPrompts from "./pages/MyPrompts";
+import Users from "./pages/Users";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Favorites from "./pages/Favorites";
@@ -87,17 +90,24 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/admin/users" element={
+            <Route path="/my-prompts" element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-8"><h1 className="text-2xl font-bold">User Management</h1><p className="text-muted-foreground">User management coming soon...</p></div>
+                  <MyPrompts />
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/admin/settings" element={
+            <Route path="/users" element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="p-8"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">System settings coming soon...</p></div>
+                  <Users />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             } />

@@ -411,6 +411,7 @@ export const usePrompts = () => {
         styleTags: data.style_tags || [],
         subjectTags: data.subject_tags || [],
         createdBy: data.created_by,
+        created_by: data.created_by,
         updatedBy: data.updated_by,
         isFavorite: data.is_favorite,
         usageCount: data.usage_count,
