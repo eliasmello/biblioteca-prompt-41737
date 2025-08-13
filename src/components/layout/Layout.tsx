@@ -1,9 +1,13 @@
 import { ReactNode, useEffect, useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Search, Bell, Sun, Moon } from "lucide-react";
+import { Search, Bell, Sun, Moon, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +15,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const { user, profile, signOut } = useAuth();
   
   useEffect(() => {
     const stored = localStorage.getItem("theme") as "light" | "dark" | null;
@@ -51,11 +56,62 @@ export function Layout({ children }: LayoutProps) {
               </div>
 
               <div className="flex items-center gap-3">
+                {/* User Profile */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src="" />
+                        <AvatarFallback className="text-xs">
+                          {user?.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src="" />
+                          <AvatarFallback>
+                            {user?.email?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {profile?.name || user?.email?.split('@')[0]}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Perfil:</span>
+                          <Badge variant={profile?.role === 'master' ? 'default' : 'outline'}>
+                            {profile?.role === 'master' ? 'Master' : 'Usuário'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Notifications */}
                 <Button variant="ghost" size="sm">
                   <Bell className="w-4 h-4" />
                 </Button>
+                
+                {/* Theme Toggle */}
                 <Button variant="ghost" size="sm" onClick={toggleTheme} aria-label="Alternar tema">
                   {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </Button>
+                
+                {/* Logout */}
+                <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sair">
+                  <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             </div>
