@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrompts } from "@/hooks/usePrompts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import { useSEO } from "@/hooks/useSEO";
 
 export default function MyPrompts() {
   const { user } = useAuth();
-  const { prompts, loading } = usePrompts();
+  const { prompts, loading, refetch } = usePrompts();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<"recent" | "alphabetical" | "usage">("recent");
@@ -30,10 +30,15 @@ export default function MyPrompts() {
     description: "Gerencie seus prompts pessoais - crie, edite e organize seus próprios prompts."
   });
 
-  // Filter only user's own prompts (both public and private)
-  const myPrompts = useMemo(() => {
-    return prompts.filter(prompt => prompt.createdBy === user?.id || prompt.created_by === user?.id);
-  }, [prompts, user?.id]);
+  // Fetch only user's personal prompts on mount
+  useEffect(() => {
+    if (user) {
+      refetch(true); // true = personalOnly
+    }
+  }, [user, refetch]);
+
+  // All prompts are already filtered for the current user
+  const myPrompts = prompts;
 
   // Get unique categories from user's prompts
   const categories = useMemo(() => {

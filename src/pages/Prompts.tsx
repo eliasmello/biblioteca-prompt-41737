@@ -17,6 +17,8 @@ import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
 import ImportDialog from "@/components/prompts/ImportDialog";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useSEO } from "@/hooks/useSEO";
 import {
   Search,
   Plus,
@@ -37,6 +39,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 export default function Prompts() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { 
     prompts, 
     loading, 
@@ -47,6 +50,8 @@ export default function Prompts() {
     refetch,
     fetchPreviewImage
   } = usePrompts();
+
+  const [isMaster, setIsMaster] = useState(false);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
@@ -69,6 +74,19 @@ export default function Prompts() {
       localStorage.setItem('prompts.sortBy', sortBy);
     } catch {}
   }, [sortBy]);
+
+  useSEO({
+    title: "Prompts de IA - Biblioteca do Sistema",
+    description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
+  });
+
+  // Check if user is master and fetch system prompts
+  useEffect(() => {
+    if (user) {
+      setIsMaster(user.email === 'eliasmello@ateliedepropaganda.com.br');
+      refetch(false); // false = fetch public system prompts only
+    }
+  }, [user, refetch]);
 
   // Get unique categories from prompts (alphabetically sorted)
   const categories = [
@@ -263,14 +281,18 @@ export default function Prompts() {
             <Download className="w-4 h-4" />
             Exportar
           </Button>
-          <ImportDialog onImport={handleImport} isImporting={isImporting} />
-          <Button 
-            className="gap-2 bg-gradient-primary"
-            onClick={() => navigate('/prompts/new')}
-          >
-            <Plus className="w-4 h-4" />
-            Novo Prompt
-          </Button>
+          {isMaster && (
+            <>
+              <ImportDialog onImport={handleImport} isImporting={isImporting} />
+              <Button 
+                className="gap-2 bg-gradient-primary"
+                onClick={() => navigate('/prompts/new')}
+              >
+                <Plus className="w-4 h-4" />
+                Novo Prompt
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -431,8 +453,8 @@ export default function Prompts() {
               onPreview={handlePreview}
               onToggleFavorite={handleToggleFavorite}
               onCopy={handleCopy}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+              onEdit={isMaster ? handleEdit : undefined}
+              onDelete={isMaster ? handleDelete : undefined}
               loadPreview={fetchPreviewImage}
               variant={viewMode}
             />

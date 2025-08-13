@@ -12,7 +12,7 @@ export const usePrompts = () => {
   const { toast } = useToast();
   const isFetchingRef = useRef(false);
 
-  const fetchPrompts = useCallback(async () => {
+  const fetchPrompts = useCallback(async (personalOnly = false) => {
     if (!user) return;
     if (isFetchingRef.current) return;
 
@@ -27,15 +27,25 @@ export const usePrompts = () => {
       const all: Prompt[] = [];
 
       while (true) {
-        const { data: rows, error } = await supabase
+        let query = supabase
           .from('prompts')
           .select(`
             id, title, category, subcategory, content, description, number,
             tags, keywords, style_tags, subject_tags, created_by, updated_by,
-            is_favorite, usage_count, created_at, updated_at
+            is_favorite, usage_count, created_at, updated_at, is_public
           `)
           .order('created_at', { ascending: false })
           .range(from, from + pageSize - 1);
+
+        if (personalOnly) {
+          // Para "Meus Prompts" - apenas prompts criados pelo usuário
+          query = query.eq('created_by', user.id);
+        } else {
+          // Para página "Prompts" - apenas prompts públicos do sistema
+          query = query.eq('is_public', true);
+        }
+
+        const { data: rows, error } = await query;
 
         if (error) {
           toast({
