@@ -77,19 +77,14 @@ export default function Users() {
 
       if (error) throw error;
       
-      // Get email from auth.users for each profile
-      const usersWithEmails = await Promise.all(
-        data.map(async (profile) => {
-          const { data: authData } = await supabase.auth.admin.getUserById(profile.id);
-          return {
-            ...profile,
-            email: authData.user?.email,
-            role: profile.role as 'user' | 'admin' | 'master'
-          };
-        })
-      );
+      // Map profiles without trying to get email from auth.admin (requires service role)
+      const users = data.map((profile) => ({
+        ...profile,
+        email: undefined, // Email não disponível sem service role
+        role: profile.role as 'user' | 'admin' | 'master'
+      }));
 
-      setUsers(usersWithEmails);
+      setUsers(users);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       toast.error("Erro ao carregar usuários");
@@ -387,7 +382,7 @@ export default function Users() {
                   {users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.email || 'N/A'}</TableCell>
                       <TableCell>
                         <Badge variant={user.role === 'master' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
                           {user.role === 'master' ? 'Master' : user.role === 'admin' ? 'Admin' : 'Usuário'}
