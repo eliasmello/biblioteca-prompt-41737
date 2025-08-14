@@ -226,7 +226,7 @@ export default function MyPrompts() {
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
             <CardTitle className="mb-2">Nenhum prompt pessoal encontrado</CardTitle>
             <CardDescription className="mb-4 max-w-md">
-              Você ainda não criou nenhum prompt pessoal. Comece criando seu primeiro prompt ou importe prompts existentes.
+              Este é seu espaço para publicar e organizar seus posts pessoais.
             </CardDescription>
             <div className="flex gap-2">
               <Button onClick={() => setShowImportDialog(true)} variant="outline">
