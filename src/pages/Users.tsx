@@ -288,7 +288,11 @@ export default function Users() {
               Envie um convite por email para que o usuário crie sua conta na plataforma.
             </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleInviteUser} className="space-y-4">
+            <form onSubmit={(e) => {
+              console.log('Form submit evento capturado!');
+              console.log('FormData atual:', formData);
+              handleInviteUser(e);
+            }} className="space-y-4">
               <div>
                 <Label htmlFor="name">Nome do Usuário</Label>
                 <Input
@@ -329,7 +333,7 @@ export default function Users() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">
+                <Button type="submit" onClick={() => console.log('Botão clicado! FormData:', formData)}>
                   Criar Convite
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
