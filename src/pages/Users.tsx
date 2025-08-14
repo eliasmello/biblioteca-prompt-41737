@@ -123,6 +123,11 @@ export default function Users() {
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast.error("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+    
     try {
       // Check if invitation already exists
       const { data: existingInvite } = await supabase
@@ -148,18 +153,12 @@ export default function Users() {
         .select()
         .single();
 
-      if (inviteError) throw inviteError;
+      if (inviteError) {
+        console.error('Erro ao criar convite:', inviteError);
+        throw inviteError;
+      }
 
-      // Send invitation email
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          email: formData.email,
-          name: formData.name,
-          inviteToken: invitation.token
-        }
-      });
-
-      if (emailError) throw emailError;
+      console.log('Convite criado:', invitation);
       
       toast.success("Convite criado com sucesso! O link pode ser copiado na aba de Convites Pendentes.");
       setShowAddDialog(false);
@@ -168,7 +167,7 @@ export default function Users() {
       fetchInvitations();
     } catch (error) {
       console.error('Erro ao criar convite:', error);
-      toast.error("Erro ao criar convite");
+      toast.error("Erro ao criar convite: " + (error as any).message);
     }
   };
 
