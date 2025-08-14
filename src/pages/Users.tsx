@@ -324,7 +324,15 @@ export default function Users() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Criar Convite</Button>
+                <Button 
+                  type="submit" 
+                  onClick={(e) => {
+                    console.log('Botão clicado!');
+                    handleInviteUser(e);
+                  }}
+                >
+                  Criar Convite
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
                   Cancelar
                 </Button>
