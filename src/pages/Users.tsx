@@ -1,18 +1,15 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Users as UsersIcon, UserPlus, Edit2, Trash2, Copy, Check, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users as UsersIcon, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useSEO } from "@/hooks/useSEO";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import InviteUserDialog from "@/components/users/InviteUserDialog";
+import UsersTable from "@/components/users/UsersTable";
+import InvitationsTable from "@/components/users/InvitationsTable";
 
 interface User {
   id: string;
@@ -35,18 +32,10 @@ interface Invitation {
 }
 
 export default function Users() {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [copiedInvite, setCopiedInvite] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'user' as 'user' | 'admin' | 'master'
-  });
 
   useSEO({
     title: "Gerenciar Usuários",
@@ -58,9 +47,12 @@ export default function Users() {
       toast.error("Acesso negado. Apenas o Master User pode gerenciar usuários.");
       return;
     }
-    fetchUsers();
-    fetchInvitations();
+    fetchUsersAndInvitations();
   }, [profile]);
+
+  const fetchUsersAndInvitations = async () => {
+    await Promise.all([fetchUsers(), fetchInvitations()]);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -75,19 +67,22 @@ export default function Users() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        throw error;
+      }
       
       // Map profiles without trying to get email from auth.admin (requires service role)
-      const users = data.map((profile) => ({
+      const users = (data || []).map((profile) => ({
         ...profile,
         email: undefined, // Email não disponível sem service role
         role: profile.role as 'user' | 'admin' | 'master'
       }));
 
       setUsers(users);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
-      toast.error("Erro ao carregar usuários");
+      toast.error(`Erro ao carregar usuários: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -101,7 +96,10 @@ export default function Users() {
         .is('used_at', null)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar convites:', error);
+        throw error;
+      }
       
       const typedInvitations = (data || []).map(invitation => ({
         ...invitation,
@@ -109,140 +107,13 @@ export default function Users() {
       }));
       
       setInvitations(typedInvitations);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar convites:', error);
-      toast.error("Erro ao carregar convites");
+      toast.error(`Erro ao carregar convites: ${error.message || 'Erro desconhecido'}`);
     }
   };
 
-  const handleInviteUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('handleInviteUser chamado!', formData);
-    
-    if (!formData.name.trim() || !formData.email.trim()) {
-      console.log('Campos obrigatórios não preenchidos');
-      toast.error("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
-    
-    try {
-      console.log('Verificando convite existente...');
-      // Check if invitation already exists
-      const { data: existingInvite, error: checkError } = await supabase
-        .from('user_invitations')
-        .select('id')
-        .eq('email', formData.email)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Erro ao verificar convite existente:', checkError);
-        throw checkError;
-      }
-
-      if (existingInvite) {
-        console.log('Convite já existe para este email');
-        toast.error("Já existe um convite pendente para este email.");
-        return;
-      }
-
-      console.log('Criando novo convite...');
-      // Create invitation record
-      const { data: invitation, error: inviteError } = await supabase
-        .from('user_invitations')
-        .insert([{
-          email: formData.email,
-          name: formData.name,
-          role: formData.role,
-          invited_by: user?.id
-        }])
-        .select()
-        .single();
-
-      if (inviteError) {
-        console.error('Erro ao criar convite:', inviteError);
-        throw inviteError;
-      }
-
-      console.log('Convite criado com sucesso:', invitation);
-      
-      toast.success("Convite criado com sucesso! O link pode ser copiado na aba de Convites Pendentes.");
-      setShowAddDialog(false);
-      setFormData({ name: '', email: '', role: 'user' });
-      fetchUsers();
-      fetchInvitations();
-    } catch (error) {
-      console.error('Erro completo ao criar convite:', error);
-      toast.error("Erro ao criar convite: " + (error as any).message);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      if (editingUser) {
-        // Update existing user
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            name: formData.name,
-            role: formData.role
-          })
-          .eq('id', editingUser.id);
-
-        if (error) throw error;
-        
-        toast.success("Usuário atualizado com sucesso!");
-        setEditingUser(null);
-        setFormData({ name: '', email: '', role: 'user' });
-        fetchUsers();
-      }
-    } catch (error) {
-      console.error('Erro ao salvar usuário:', error);
-      toast.error("Erro ao salvar usuário");
-    }
-  };
-
-  const handleDelete = async (userId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
-
-    try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
-      
-      toast.success("Usuário excluído com sucesso!");
-      fetchUsers();
-    } catch (error) {
-      console.error('Erro ao excluir usuário:', error);
-      toast.error("Erro ao excluir usuário");
-    }
-  };
-
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setFormData({
-      name: user.name,
-      email: user.email || '',
-      role: user.role
-    });
-  };
-
-  const copyInviteLink = async (token: string) => {
-    const inviteUrl = `${window.location.origin}/accept-invite?token=${token}`;
-    
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopiedInvite(token);
-      toast.success("Link de convite copiado!");
-      
-      // Reset copied state after 2 seconds
-      setTimeout(() => setCopiedInvite(null), 2000);
-    } catch (error) {
-      console.error('Erro ao copiar link:', error);
-      toast.error("Erro ao copiar link");
-    }
-  };
-
+  // Access control
   if (profile?.role !== 'master') {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -255,6 +126,7 @@ export default function Users() {
     );
   }
 
+  // Loading state
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -274,75 +146,7 @@ export default function Users() {
           <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
         </div>
         
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Adicionar Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-            <DialogTitle>Convidar Novo Usuário</DialogTitle>
-            <DialogDescription>
-              Envie um convite por email para que o usuário crie sua conta na plataforma.
-            </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={(e) => {
-              console.log('Form submit evento capturado!');
-              console.log('FormData atual:', formData);
-              handleInviteUser(e);
-            }} className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nome do Usuário</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  placeholder="Digite o nome completo"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email do Usuário</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                  placeholder="Digite o email do usuário"
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Função</Label>
-                <Select value={formData.role} onValueChange={(value: 'user' | 'admin' | 'master') => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">Usuário Padrão</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="master">Master</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Um convite será criado para o usuário. Você poderá copiar o link de convite na aba "Convites Pendentes" para compartilhar manualmente.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" onClick={() => console.log('Botão clicado! FormData:', formData)}>
-                  Criar Convite
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <InviteUserDialog onInviteCreated={fetchUsersAndInvitations} />
       </div>
 
       <Tabs defaultValue="users" className="w-full">
@@ -350,6 +154,11 @@ export default function Users() {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <UsersIcon className="h-4 w-4" />
             Usuários Ativos
+            {users.length > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {users.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="invitations" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
@@ -363,184 +172,13 @@ export default function Users() {
         </TabsList>
 
         <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lista de Usuários</CardTitle>
-              <CardDescription>
-                Gerencie todos os usuários ativos do sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'master' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
-                          {user.role === 'master' ? 'Master' : user.role === 'admin' ? 'Admin' : 'Usuário'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.is_active ? 'default' : 'destructive'}>
-                          {user.is_active ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(user)}
-                            disabled={false}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(user.id)}
-                            disabled={user.id === user?.id || user.role === 'master'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <UsersTable users={users} onUserUpdated={fetchUsers} />
         </TabsContent>
 
         <TabsContent value="invitations">
-          <Card>
-            <CardHeader>
-              <CardTitle>Convites Pendentes</CardTitle>
-              <CardDescription>
-                Gerencie convites que ainda não foram utilizados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {invitations.length === 0 ? (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhum convite pendente</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Função</TableHead>
-                      <TableHead>Criado em</TableHead>
-                      <TableHead>Expira em</TableHead>
-                      <TableHead>Link de Convite</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invitations.map((invitation) => (
-                      <TableRow key={invitation.id}>
-                        <TableCell className="font-medium">{invitation.name}</TableCell>
-                        <TableCell>{invitation.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={invitation.role === 'master' ? 'default' : invitation.role === 'admin' ? 'secondary' : 'outline'}>
-                            {invitation.role === 'master' ? 'Master' : invitation.role === 'admin' ? 'Admin' : 'Usuário'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(invitation.created_at).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(invitation.expires_at).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copyInviteLink(invitation.token)}
-                            className="flex items-center gap-2"
-                          >
-                            {copiedInvite === invitation.token ? (
-                              <>
-                                <Check className="h-4 w-4 text-green-600" />
-                                Copiado!
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-4 w-4" />
-                                Copiar Link
-                              </>
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <InvitationsTable invitations={invitations} />
         </TabsContent>
       </Tabs>
-
-      {/* Edit User Dialog */}
-      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do usuário.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Nome</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-role">Função</Label>
-              <Select value={formData.role} onValueChange={(value: 'user' | 'admin' | 'master') => setFormData({ ...formData, role: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Usuário</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="master">Master</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit">Salvar</Button>
-              <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
