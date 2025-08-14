@@ -95,7 +95,7 @@ export const usePrompts = () => {
     }
   }, [user, toast]);
 
-  const createPrompt = useCallback(async (promptData: Partial<Prompt>) => {
+  const createPrompt = useCallback(async (promptData: Partial<Prompt>, isPublic = false) => {
     if (!user) return { error: 'User not authenticated' };
 
     const parsed = parsePromptContent(promptData.content || '');
@@ -114,7 +114,8 @@ export const usePrompts = () => {
       preview_image: promptData.previewImage,
       created_by: user.id,
       is_favorite: false,
-      usage_count: 0
+      usage_count: 0,
+      is_public: isPublic // Define se é prompt público (Master) ou privado (usuário normal)
     };
     
     const { data, error } = await supabase
@@ -348,7 +349,8 @@ export const usePrompts = () => {
       subject_tags: prompt.subjectTags || [],
       created_by: user.id,
       is_favorite: false,
-      usage_count: 0
+      usage_count: 0,
+      is_public: false // Prompts importados são sempre privados por padrão
     }));
 
     const { data, error } = await supabase

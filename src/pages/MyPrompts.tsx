@@ -11,17 +11,21 @@ import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import CategorySelect from "@/components/prompts/CategorySelect";
 import ImportDialog from "@/components/prompts/ImportDialog";
 import { Search, Plus, FileText, Import } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSEO } from "@/hooks/useSEO";
+import { useToast } from "@/hooks/use-toast";
 
 export default function MyPrompts() {
   const { user } = useAuth();
-  const { prompts, loading, refetch } = usePrompts();
+  const { prompts, loading, refetch, importPrompts, updatePrompt, deletePrompt } = usePrompts();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<"recent" | "alphabetical" | "usage">("recent");
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -89,6 +93,52 @@ export default function MyPrompts() {
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category === 'Todas as Categorias' ? 'all' : category.toLowerCase());
+  };
+
+  const handleImport = async (content: string) => {
+    setIsImporting(true);
+    try {
+      await importPrompts(content);
+      refetch(true); // Recarregar apenas prompts pessoais
+      setShowImportDialog(false);
+      toast({
+        title: "Sucesso!",
+        description: "Prompts importados com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao importar prompts.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleToggleFavorite = async (id: string) => {
+    const prompt = prompts.find(p => p.id === id);
+    if (prompt) {
+      await updatePrompt(id, { isFavorite: !prompt.isFavorite });
+    }
+  };
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast({
+      title: "Copiado!",
+      description: "Prompt copiado para a área de transferência.",
+    });
+  };
+
+  const handleEdit = (id: string) => {
+    navigate(`/prompts/edit/${id}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este prompt?')) {
+      await deletePrompt(id);
+    }
   };
 
   if (loading) {
@@ -210,8 +260,10 @@ export default function MyPrompts() {
               key={prompt.id} 
               prompt={prompt}
               onPreview={() => {}}
-              onToggleFavorite={() => {}}
-              onCopy={() => {}}
+              onToggleFavorite={handleToggleFavorite}
+              onCopy={handleCopy}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               loadPreview={() => {}}
             />
           ))}
@@ -220,13 +272,9 @@ export default function MyPrompts() {
 
       {/* Import Dialog */}
       <ImportDialog 
-        onImport={async (content) => {
-          // Import logic here
-        }}
-        isImporting={false}
-      >
-        <Button onClick={() => setShowImportDialog(true)}>Import</Button>
-      </ImportDialog>
+        onImport={handleImport}
+        isImporting={isImporting}
+      />
     </div>
   );
 }

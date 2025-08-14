@@ -453,8 +453,8 @@ export default function Prompts() {
               onPreview={handlePreview}
               onToggleFavorite={handleToggleFavorite}
               onCopy={handleCopy}
-              onEdit={isMaster ? handleEdit : undefined}
-              onDelete={isMaster ? handleDelete : undefined}
+              onEdit={undefined}
+              onDelete={undefined}
               loadPreview={fetchPreviewImage}
               variant={viewMode}
             />
