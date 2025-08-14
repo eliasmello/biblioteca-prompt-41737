@@ -31,8 +31,7 @@ export default function Users() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'user' as 'user' | 'admin' | 'master',
-    password: ''
+    role: 'user' as 'user' | 'admin' | 'master'
   });
 
   useSEO({
@@ -84,6 +83,45 @@ export default function Users() {
     }
   };
 
+  const handleInviteUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Create invitation record
+      const { data: invitation, error: inviteError } = await supabase
+        .from('user_invitations')
+        .insert([{
+          email: formData.email,
+          name: formData.name,
+          role: formData.role,
+          invited_by: user?.id
+        }])
+        .select()
+        .single();
+
+      if (inviteError) throw inviteError;
+
+      // Send invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: formData.email,
+          name: formData.name,
+          inviteToken: invitation.token
+        }
+      });
+
+      if (emailError) throw emailError;
+      
+      toast.success("Convite enviado com sucesso!");
+      setShowAddDialog(false);
+      setFormData({ name: '', email: '', role: 'user' });
+      fetchUsers();
+    } catch (error) {
+      console.error('Erro ao enviar convite:', error);
+      toast.error("Erro ao enviar convite");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -102,24 +140,9 @@ export default function Users() {
         
         toast.success("Usuário atualizado com sucesso!");
         setEditingUser(null);
-      } else {
-        // Create new user
-        const { error } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          user_metadata: {
-            name: formData.name
-          }
-        });
-
-        if (error) throw error;
-        
-        toast.success("Usuário criado com sucesso!");
-        setShowAddDialog(false);
+        setFormData({ name: '', email: '', role: 'user' });
+        fetchUsers();
       }
-
-      setFormData({ name: '', email: '', role: 'user', password: '' });
-      fetchUsers();
     } catch (error) {
       console.error('Erro ao salvar usuário:', error);
       toast.error("Erro ao salvar usuário");
@@ -146,8 +169,7 @@ export default function Users() {
     setFormData({
       name: user.name,
       email: user.email || '',
-      role: user.role,
-      password: ''
+      role: user.role
     });
   };
 
@@ -191,40 +213,31 @@ export default function Users() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-              <DialogDescription>
-                Crie uma nova conta de usuário no sistema.
-              </DialogDescription>
+            <DialogTitle>Convidar Novo Usuário</DialogTitle>
+            <DialogDescription>
+              Envie um convite por email para que o usuário crie sua conta na plataforma.
+            </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleInviteUser} className="space-y-4">
               <div>
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name">Nome do Usuário</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  placeholder="Digite o nome completo"
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email do Usuário</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
+                  placeholder="Digite o email do usuário"
                 />
               </div>
               <div>
@@ -234,14 +247,19 @@ export default function Users() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">Usuário</SelectItem>
+                    <SelectItem value="user">Usuário Padrão</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                     <SelectItem value="master">Master</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Um email de convite será enviado para o usuário com instruções para criar sua senha e acessar a plataforma.
+                </p>
+              </div>
               <div className="flex gap-2">
-                <Button type="submit">Criar Usuário</Button>
+                <Button type="submit">Enviar Convite</Button>
                 <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
                   Cancelar
                 </Button>
