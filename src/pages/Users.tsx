@@ -87,6 +87,18 @@ export default function Users() {
     e.preventDefault();
     
     try {
+      // Check if invitation already exists
+      const { data: existingInvite } = await supabase
+        .from('user_invitations')
+        .select('id')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingInvite) {
+        toast.error("Já existe um convite pendente para este email.");
+        return;
+      }
+
       // Create invitation record
       const { data: invitation, error: inviteError } = await supabase
         .from('user_invitations')
