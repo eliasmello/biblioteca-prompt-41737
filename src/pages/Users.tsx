@@ -406,7 +406,7 @@ export default function Users() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleEdit(user)}
-                            disabled={user.id === user?.id}
+                            disabled={false}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
