@@ -176,7 +176,7 @@ export default function Users() {
         </TabsContent>
 
         <TabsContent value="invitations">
-          <InvitationsTable invitations={invitations} />
+          <InvitationsTable invitations={invitations} onInvitationDeleted={fetchInvitations} />
         </TabsContent>
       </Tabs>
     </div>
