@@ -6,7 +6,8 @@ import { Prompt } from '@/types/prompt';
 import { parsePromptContent } from '@/lib/prompt-parser';
 
 export const usePrompts = () => {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [publicPrompts, setPublicPrompts] = useState<Prompt[]>([]);
+  const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,7 +82,11 @@ export const usePrompts = () => {
         from += pageSize;
       }
 
-      setPrompts(all);
+      if (personalOnly) {
+        setPersonalPrompts(all);
+      } else {
+        setPublicPrompts(all);
+      }
     } catch (err) {
       console.error('Erro ao buscar prompts:', err);
       toast({
@@ -149,7 +154,12 @@ export const usePrompts = () => {
         previewImage: data.preview_image
       };
       
-      setPrompts(prev => [mappedData, ...prev]);
+      // Add to personal prompts if it's a private prompt, or public prompts if it's public
+      if (isPublic) {
+        setPublicPrompts(prev => [mappedData, ...prev]);
+      } else {
+        setPersonalPrompts(prev => [mappedData, ...prev]);
+      }
       
       toast({
         title: "Prompt criado!",
@@ -208,7 +218,9 @@ export const usePrompts = () => {
         previewImage: data.preview_image
       };
       
-      setPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
+      // Update in both arrays if needed
+      setPublicPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
+      setPersonalPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
       
       if (!options?.silent) {
         toast({
@@ -236,7 +248,9 @@ export const usePrompts = () => {
       });
       return { error };
     } else {
-      setPrompts(prev => prev.filter(p => p.id !== id));
+      // Remove from both arrays
+      setPublicPrompts(prev => prev.filter(p => p.id !== id));
+      setPersonalPrompts(prev => prev.filter(p => p.id !== id));
       
       toast({
         title: "Prompt deletado!",
@@ -388,7 +402,9 @@ export const usePrompts = () => {
         .single();
 
       if (!error && data) {
-        setPrompts(prev => prev.map(p => p.id === id ? { ...p, previewImage: data.preview_image || null } : p));
+        // Update in both arrays
+        setPublicPrompts(prev => prev.map(p => p.id === id ? { ...p, previewImage: data.preview_image || null } : p));
+        setPersonalPrompts(prev => prev.map(p => p.id === id ? { ...p, previewImage: data.preview_image || null } : p));
       }
     } catch (e) {
       console.warn('Falha ao carregar preview_image:', e);
@@ -445,7 +461,9 @@ export const usePrompts = () => {
   }, [user, fetchPrompts]);
 
   const value = useMemo(() => ({
-    prompts,
+    prompts: publicPrompts, // Default to public prompts for backward compatibility
+    personalPrompts,
+    publicPrompts,
     loading,
     createPrompt,
     updatePrompt,
@@ -454,7 +472,7 @@ export const usePrompts = () => {
     refetch: fetchPrompts,
     fetchPreviewImage,
     getPromptById
-  }), [prompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts, fetchPreviewImage, getPromptById]);
+  }), [publicPrompts, personalPrompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts, fetchPreviewImage, getPromptById]);
 
   return value;
 };

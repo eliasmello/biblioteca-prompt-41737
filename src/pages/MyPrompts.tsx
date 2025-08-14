@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function MyPrompts() {
   const { user } = useAuth();
-  const { prompts, loading, refetch, importPrompts, updatePrompt, deletePrompt } = usePrompts();
+  const { personalPrompts, loading, refetch, importPrompts, updatePrompt, deletePrompt } = usePrompts();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<"recent" | "alphabetical" | "usage">("recent");
@@ -41,8 +41,8 @@ export default function MyPrompts() {
     }
   }, [user, refetch]);
 
-  // All prompts are already filtered for the current user
-  const myPrompts = prompts;
+  // Use only personal prompts for this page
+  const myPrompts = personalPrompts;
 
   // Get unique categories from user's prompts
   const categories = useMemo(() => {
@@ -117,7 +117,7 @@ export default function MyPrompts() {
   };
 
   const handleToggleFavorite = async (id: string) => {
-    const prompt = prompts.find(p => p.id === id);
+    const prompt = personalPrompts.find(p => p.id === id);
     if (prompt) {
       await updatePrompt(id, { isFavorite: !prompt.isFavorite });
     }
