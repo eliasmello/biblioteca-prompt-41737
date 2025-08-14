@@ -31,6 +31,7 @@ export default function InvitationsTable({ invitations }: InvitationsTableProps)
       await navigator.clipboard.writeText(inviteUrl);
       setCopiedInvite(token);
       toast.success("Link de convite copiado!");
+      console.log("Link gerado:", inviteUrl); // Para debug
       
       // Reset copied state after 2 seconds
       setTimeout(() => setCopiedInvite(null), 2000);
