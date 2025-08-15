@@ -48,6 +48,14 @@ export default function Users() {
       return;
     }
     fetchUsersAndInvitations();
+    
+    // Auto-refresh a cada 30 segundos para manter dados atualizados
+    const interval = setInterval(() => {
+      console.log('DEBUG: Auto-refresh dos convites e usuários');
+      fetchUsersAndInvitations();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [profile]);
 
   const fetchUsersAndInvitations = async () => {
@@ -105,6 +113,12 @@ export default function Users() {
         ...invitation,
         role: invitation.role as 'user' | 'admin' | 'master'
       }));
+      
+      console.log('DEBUG: Convites carregados do banco:', typedInvitations.map(inv => ({ 
+        email: inv.email, 
+        token: inv.token, 
+        id: inv.id 
+      })));
       
       setInvitations(typedInvitations);
     } catch (error: any) {
