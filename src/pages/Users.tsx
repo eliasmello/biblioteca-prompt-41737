@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InviteUserDialog from "@/components/users/InviteUserDialog";
 import UsersTable from "@/components/users/UsersTable";
 import InvitationsTable from "@/components/users/InvitationsTable";
+import { RegistrationsTable } from "@/components/users/RegistrationsTable";
 
 interface User {
   id: string;
@@ -31,10 +32,21 @@ interface Invitation {
   used_at?: string;
 }
 
+interface Registration {
+  id: string;
+  name: string;
+  email: string;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  reviewed_at: string | null;
+}
+
 export default function Users() {
   const { profile } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
 
   useSEO({
@@ -47,19 +59,19 @@ export default function Users() {
       toast.error("Acesso negado. Apenas o Master User pode gerenciar usuários.");
       return;
     }
-    fetchUsersAndInvitations();
+    fetchUsersInvitationsAndRegistrations();
     
     // Auto-refresh a cada 30 segundos para manter dados atualizados
     const interval = setInterval(() => {
-      console.log('DEBUG: Auto-refresh dos convites e usuários');
-      fetchUsersAndInvitations();
+      console.log('DEBUG: Auto-refresh dos convites, usuários e solicitações');
+      fetchUsersInvitationsAndRegistrations();
     }, 30000);
 
     return () => clearInterval(interval);
   }, [profile]);
 
-  const fetchUsersAndInvitations = async () => {
-    await Promise.all([fetchUsers(), fetchInvitations()]);
+  const fetchUsersInvitationsAndRegistrations = async () => {
+    await Promise.all([fetchUsers(), fetchInvitations(), fetchRegistrations()]);
   };
 
   const fetchUsers = async () => {
@@ -127,6 +139,30 @@ export default function Users() {
     }
   };
 
+  const fetchRegistrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_registrations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar solicitações:', error);
+        throw error;
+      }
+      
+      const typedRegistrations = (data || []).map(reg => ({
+        ...reg,
+        status: reg.status as 'pending' | 'approved' | 'rejected'
+      }));
+      
+      setRegistrations(typedRegistrations);
+    } catch (error: any) {
+      console.error('Erro ao buscar solicitações:', error);
+      toast.error(`Erro ao carregar solicitações: ${error.message || 'Erro desconhecido'}`);
+    }
+  };
+
   // Access control
   if (profile?.role !== 'master') {
     return (
@@ -160,11 +196,11 @@ export default function Users() {
           <h1 className="text-2xl font-bold">Gerenciar Usuários</h1>
         </div>
         
-        <InviteUserDialog onInviteCreated={fetchUsersAndInvitations} />
+        <InviteUserDialog onInviteCreated={fetchUsersInvitationsAndRegistrations} />
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <UsersIcon className="h-4 w-4" />
             Usuários Ativos
@@ -183,6 +219,15 @@ export default function Users() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="registrations" className="flex items-center gap-2">
+            <UsersIcon className="h-4 w-4" />
+            Solicitações
+            {registrations.filter(r => r.status === 'pending').length > 0 && (
+              <Badge variant="destructive" className="ml-1">
+                {registrations.filter(r => r.status === 'pending').length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -191,6 +236,10 @@ export default function Users() {
 
         <TabsContent value="invitations">
           <InvitationsTable invitations={invitations} onInvitationDeleted={fetchInvitations} />
+        </TabsContent>
+
+        <TabsContent value="registrations">
+          <RegistrationsTable registrations={registrations} onRegistrationUpdate={fetchUsersInvitationsAndRegistrations} />
         </TabsContent>
       </Tabs>
     </div>

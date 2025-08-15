@@ -216,6 +216,16 @@ export function AuthForm() {
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      <CardFooter className="justify-center">
+        <Button
+          variant="link"
+          onClick={() => window.location.href = '/register'}
+          className="text-sm"
+        >
+          Primeira vez? Solicitar acesso
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
