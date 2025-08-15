@@ -30,7 +30,10 @@ export default function AcceptInvite() {
   });
 
   useEffect(() => {
+    console.log('AcceptInvite: Token from URL:', token);
+    
     if (!token) {
+      console.error('AcceptInvite: No token found in URL');
       toast.error("Token de convite inválido");
       navigate('/auth');
       return;
