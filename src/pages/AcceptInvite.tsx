@@ -9,10 +9,12 @@ import { toast } from "sonner";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Eye, EyeOff } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +41,10 @@ export default function AcceptInvite() {
       return;
     }
     
-    validateInvite();
+    // Fazer logout se o usuário estiver logado antes de aceitar o convite
+    signOut().then(() => {
+      validateInvite();
+    });
   }, [token]);
 
   const validateInvite = async () => {
