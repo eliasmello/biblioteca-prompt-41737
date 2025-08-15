@@ -36,39 +36,11 @@ export function RegistrationsTable({ registrations, onRegistrationUpdate }: Regi
     setProcessing(registration.id);
     
     try {
-      // Create user account
-      const { data: userData, error: signUpError } = await supabase.auth.admin.createUser({
-        email: registration.email,
-        password: Math.random().toString(36).slice(-8), // Temporary password
-        email_confirm: true,
-        user_metadata: {
-          name: registration.name,
-          role: 'user'
-        }
+      const { data, error } = await supabase.functions.invoke('approve-registration', {
+        body: { registrationId: registration.id }
       });
 
-      if (signUpError) throw signUpError;
-
-      // Update registration status
-      const { error: updateError } = await supabase
-        .from('user_registrations')
-        .update({ 
-          status: 'approved',
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', registration.id);
-
-      if (updateError) throw updateError;
-
-      // Update user profile with role
-      if (userData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ role: 'user' })
-          .eq('id', userData.user.id);
-
-        if (profileError) throw profileError;
-      }
+      if (error) throw error;
 
       toast.success(`Usuário ${registration.name} aprovado com sucesso!`);
       onRegistrationUpdate();
