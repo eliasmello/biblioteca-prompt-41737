@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +32,10 @@ export default function AcceptInvite() {
   });
 
   useEffect(() => {
+    console.log('AcceptInvite: Component mounted');
+    console.log('AcceptInvite: Current URL:', window.location.href);
     console.log('AcceptInvite: Token from URL:', token);
+    console.log('AcceptInvite: Current user:', user);
     
     if (!token) {
       console.error('AcceptInvite: No token found in URL');
