@@ -32,20 +32,21 @@ export default function AcceptInvite() {
   });
 
   useEffect(() => {
-    console.log('AcceptInvite: Component mounted');
-    console.log('AcceptInvite: Current URL:', window.location.href);
-    console.log('AcceptInvite: Token from URL:', token);
-    console.log('AcceptInvite: Current user:', user);
-    console.log('AcceptInvite: Search params:', searchParams.toString());
+    console.log('🔍 AcceptInvite: Component mounted');
+    console.log('🔍 AcceptInvite: Current URL:', window.location.href);
+    console.log('🔍 AcceptInvite: Token from URL:', token);
+    console.log('🔍 AcceptInvite: Current user:', user);
+    console.log('🔍 AcceptInvite: Search params:', searchParams.toString());
+    console.log('🔍 AcceptInvite: All search params:', Object.fromEntries(searchParams.entries()));
     
     if (!token) {
-      console.error('AcceptInvite: No token found in URL');
+      console.error('❌ AcceptInvite: No token found in URL');
       toast.error("Token de convite inválido");
       navigate('/auth');
       return;
     }
     
-    console.log('AcceptInvite: About to validate invite with token:', token);
+    console.log('🔍 AcceptInvite: About to validate invite with token:', token);
     validateInvite();
   }, [token, navigate]);
 
