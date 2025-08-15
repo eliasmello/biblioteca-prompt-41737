@@ -36,6 +36,7 @@ export default function AcceptInvite() {
     console.log('AcceptInvite: Current URL:', window.location.href);
     console.log('AcceptInvite: Token from URL:', token);
     console.log('AcceptInvite: Current user:', user);
+    console.log('AcceptInvite: Search params:', searchParams.toString());
     
     if (!token) {
       console.error('AcceptInvite: No token found in URL');
@@ -44,9 +45,9 @@ export default function AcceptInvite() {
       return;
     }
     
-    // Validar convite diretamente sem logout desnecessário
+    console.log('AcceptInvite: About to validate invite with token:', token);
     validateInvite();
-  }, [token]);
+  }, [token, navigate]);
 
   const validateInvite = async () => {
     try {
