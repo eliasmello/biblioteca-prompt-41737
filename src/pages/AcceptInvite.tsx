@@ -41,10 +41,8 @@ export default function AcceptInvite() {
       return;
     }
     
-    // Fazer logout se o usuário estiver logado antes de aceitar o convite
-    signOut().then(() => {
-      validateInvite();
-    });
+    // Validar convite diretamente sem logout desnecessário
+    validateInvite();
   }, [token]);
 
   const validateInvite = async () => {
