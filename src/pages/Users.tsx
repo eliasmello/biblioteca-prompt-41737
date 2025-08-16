@@ -40,6 +40,7 @@ interface Registration {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   reviewed_at: string | null;
+  reviewed_by: string | null;
 }
 
 export default function Users() {
@@ -143,7 +144,7 @@ export default function Users() {
     try {
       const { data, error } = await supabase
         .from('user_registrations')
-        .select('*')
+        .select('id, name, email, message, status, created_at, reviewed_at, reviewed_by')
         .order('created_at', { ascending: false });
 
       if (error) {

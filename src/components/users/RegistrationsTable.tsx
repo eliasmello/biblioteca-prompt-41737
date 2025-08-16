@@ -22,6 +22,7 @@ interface Registration {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   reviewed_at: string | null;
+  reviewed_by: string | null;
 }
 
 interface RegistrationsTableProps {
@@ -109,6 +110,11 @@ export function RegistrationsTable({ registrations, onRegistrationUpdate }: Regi
     }
   };
 
+  // Função para verificar se uma aprovação foi problemática
+  const isProblematicApproval = (registration: Registration) => {
+    return registration.status === 'approved' && !registration.reviewed_by;
+  };
+
   if (registrations.length === 0) {
     return (
       <Card>
@@ -134,6 +140,11 @@ export function RegistrationsTable({ registrations, onRegistrationUpdate }: Regi
                   {getStatusIcon(registration.status)}
                   <span className="ml-1">{getStatusText(registration.status)}</span>
                 </Badge>
+                {isProblematicApproval(registration) && (
+                  <Badge variant="destructive" className="text-xs">
+                    Requer Re-aprovação
+                  </Badge>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -153,22 +164,30 @@ export function RegistrationsTable({ registrations, onRegistrationUpdate }: Regi
                   Solicitado em: {new Date(registration.created_at).toLocaleDateString('pt-BR')}
                 </p>
                 
-                {registration.status === 'pending' && (
+                {(registration.status === 'pending' || isProblematicApproval(registration)) && (
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleReject(registration)}
-                      disabled={processing === registration.id}
-                    >
-                      {processing === registration.id ? "Processando..." : "Rejeitar"}
-                    </Button>
+                    {registration.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleReject(registration)}
+                        disabled={processing === registration.id}
+                      >
+                        {processing === registration.id ? "Processando..." : "Rejeitar"}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={() => handleApprove(registration)}
                       disabled={processing === registration.id}
+                      variant={isProblematicApproval(registration) ? "secondary" : "default"}
                     >
-                      {processing === registration.id ? "Processando..." : "Aprovar"}
+                      {processing === registration.id 
+                        ? "Processando..." 
+                        : isProblematicApproval(registration) 
+                          ? "Re-aprovar" 
+                          : "Aprovar"
+                      }
                     </Button>
                   </div>
                 )}
