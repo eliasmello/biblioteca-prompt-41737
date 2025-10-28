@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          icon: string
+          id: string
+          name: string
+          parent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      prompts: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_favorite: boolean | null
+          is_public: boolean | null
+          keywords: string[] | null
+          number: number | null
+          preview_image: string | null
+          style_tags: string[] | null
+          subcategory: string | null
+          subject_tags: string[] | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          updated_by: string
+          usage_count: number | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_public?: boolean | null
+          keywords?: string[] | null
+          number?: number | null
+          preview_image?: string | null
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          updated_by: string
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_public?: boolean | null
+          keywords?: string[] | null
+          number?: number | null
+          preview_image?: string | null
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
