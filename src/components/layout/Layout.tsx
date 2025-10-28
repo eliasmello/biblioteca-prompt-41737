@@ -79,7 +79,7 @@ export function Layout({ children }: LayoutProps) {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">
-                            {profile?.name || user?.email?.split('@')[0]}
+                            {profile?.display_name || user?.email?.split('@')[0]}
                           </p>
                           <p className="text-sm text-muted-foreground truncate">
                             {user?.email}

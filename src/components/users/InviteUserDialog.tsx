@@ -64,13 +64,15 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
       }
 
       // Create invitation record
+      const invitationToken = crypto.randomUUID();
       const { data: invitation, error: inviteError } = await supabase
         .from('user_invitations')
         .insert([{
           email: formData.email.trim().toLowerCase(),
           name: formData.name.trim(),
           role: formData.role,
-          invited_by: user?.id
+          token: invitationToken,
+          created_by: user?.id
         }])
         .select()
         .single();

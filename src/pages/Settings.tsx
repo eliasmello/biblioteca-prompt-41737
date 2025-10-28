@@ -15,7 +15,7 @@ export default function Settings() {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: profile?.name || '',
+    display_name: profile?.display_name || '',
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -35,7 +35,7 @@ export default function Settings() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ name: profileData.name })
+        .update({ display_name: profileData.display_name })
         .eq('id', user?.id);
 
       if (error) throw error;
@@ -153,11 +153,11 @@ export default function Settings() {
 
             <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div>
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="display_name">Nome</Label>
                 <Input
-                  id="name"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  id="display_name"
+                  value={profileData.display_name}
+                  onChange={(e) => setProfileData({ ...profileData, display_name: e.target.value })}
                   placeholder="Seu nome completo"
                 />
               </div>

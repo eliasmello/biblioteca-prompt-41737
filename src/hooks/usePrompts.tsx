@@ -118,6 +118,7 @@ export const usePrompts = () => {
       subject_tags: parsed.extractedTags?.subject || [],
       preview_image: promptData.previewImage,
       created_by: user.id,
+      updated_by: user.id,
       is_favorite: false,
       usage_count: 0,
       is_public: isPublic // Define se é prompt público (Master) ou privado (usuário normal)
@@ -362,6 +363,7 @@ export const usePrompts = () => {
       style_tags: prompt.styleTags || [],
       subject_tags: prompt.subjectTags || [],
       created_by: user.id,
+      updated_by: user.id,
       is_favorite: false,
       usage_count: 0,
       is_public: false // Prompts importados são sempre privados por padrão

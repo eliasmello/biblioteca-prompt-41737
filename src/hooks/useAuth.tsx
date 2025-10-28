@@ -5,9 +5,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
   id: string;
-  name: string;
-  role: 'master' | 'user';
-  is_active: boolean;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: string;
   created_at: string;
   updated_at: string;
 }

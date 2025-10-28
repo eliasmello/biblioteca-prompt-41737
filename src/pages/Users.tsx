@@ -81,9 +81,8 @@ export default function Users() {
         .from('profiles')
         .select(`
           id,
-          name,
+          display_name,
           role,
-          is_active,
           created_at
         `)
         .order('created_at', { ascending: false });
@@ -95,9 +94,12 @@ export default function Users() {
       
       // Map profiles without trying to get email from auth.admin (requires service role)
       const users = (data || []).map((profile) => ({
-        ...profile,
+        id: profile.id,
+        name: profile.display_name || 'Sem nome',
         email: undefined, // Email não disponível sem service role
-        role: profile.role as 'user' | 'admin' | 'master'
+        role: profile.role as 'user' | 'admin' | 'master',
+        is_active: true, // Assume ativo
+        created_at: profile.created_at
       }));
 
       setUsers(users);
