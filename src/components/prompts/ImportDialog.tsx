@@ -198,7 +198,7 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>Importar Prompts</DialogTitle>
           <DialogDescription>

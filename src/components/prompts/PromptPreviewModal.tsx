@@ -55,7 +55,7 @@ export function PromptPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+      <DialogContent className="max-w-4xl glass">
         <DialogHeader className="relative">
           {/* Action buttons - positioned absolutely in top-right */}
           <div className="absolute top-0 right-0 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1 border border-border/50">
