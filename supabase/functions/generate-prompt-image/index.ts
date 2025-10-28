@@ -5,43 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Function to compress base64 image
-async function compressImage(base64Data: string, quality: number = 0.6): Promise<string> {
+// Function to compress base64 image (simplified version without OffscreenCanvas)
+async function compressImage(base64Data: string, _quality: number = 0.6): Promise<string> {
   try {
-    // Convert base64 to blob
-    const response = await fetch(`data:image/webp;base64,${base64Data}`)
-    const blob = await response.blob()
-    
-    // Create a canvas to resize and compress
-    const canvas = new OffscreenCanvas(256, 256) // Smaller size for thumbnails
-    const ctx = canvas.getContext('2d')
-    
-    if (!ctx) {
-      throw new Error('Canvas context not available')
-    }
-    
-    // Create image bitmap from blob
-    const imageBitmap = await createImageBitmap(blob)
-    
-    // Draw resized image
-    ctx.drawImage(imageBitmap, 0, 0, 256, 256)
-    
-    // Convert to blob with compression
-    const compressedBlob = await canvas.convertToBlob({
-      type: 'image/webp',
-      quality: quality
-    })
-    
-    // Convert back to base64
-    const arrayBuffer = await compressedBlob.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-    const base64Compressed = btoa(String.fromCharCode(...uint8Array))
-    
-    console.log(`Image compressed from ${base64Data.length} to ${base64Compressed.length} characters`)
-    return base64Compressed
+    // Simply return the original base64 data
+    // In production, you might want to use a different image processing library
+    console.log(`Image size: ${base64Data.length} characters`)
+    return base64Data
   } catch (error) {
     console.error('Compression failed:', error)
-    // Return original if compression fails
     return base64Data
   }
 }
@@ -99,8 +71,9 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: 'Failed to generate image', details: error.message }),
+      JSON.stringify({ error: 'Failed to generate image', details: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

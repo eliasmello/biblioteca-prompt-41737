@@ -385,14 +385,29 @@ export const usePrompts = () => {
         variant: "destructive"
       });
       return { error };
-    } else {
-      toast({
-        title: "Prompts importados!",
-        description: `${data?.length || 0} prompts importados com sucesso.`
-      });
-      await fetchPrompts();
-      return { data };
     }
+    
+    const mappedData = (data || []).map(d => ({
+      ...d,
+      styleTags: d.style_tags || [],
+      subjectTags: d.subject_tags || [],
+      createdBy: d.created_by,
+      updatedBy: d.updated_by,
+      isFavorite: d.is_favorite,
+      usageCount: d.usage_count,
+      createdAt: d.created_at,
+      updatedAt: d.updated_at,
+      previewImage: d.preview_image
+    }));
+    
+    // Add to personal prompts since imported prompts are private
+    setPersonalPrompts(prev => [...mappedData, ...prev]);
+    
+    toast({
+      title: "Prompts importados!",
+      description: `${data?.length || 0} prompts importados com sucesso.`
+    });
+    return { data: mappedData };
   }, [user, toast, fetchPrompts]);
 
   const fetchPreviewImage = useCallback(async (id: string) => {

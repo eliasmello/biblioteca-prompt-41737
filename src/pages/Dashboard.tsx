@@ -20,7 +20,10 @@ import {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { prompts, loading } = usePrompts();
+  const { personalPrompts, loading } = usePrompts();
+  
+  // Use personal prompts on dashboard (user's own prompts)
+  const prompts = personalPrompts;
 
   useSEO({
     title: "Dashboard — Visão geral de prompts",
