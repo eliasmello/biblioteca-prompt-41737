@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrompts } from "@/hooks/usePrompts";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,11 +21,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function MyPrompts() {
   const { user } = useAuth();
   const { personalPrompts, loading, refetch, importPrompts, updatePrompt, deletePrompt } = usePrompts();
+  const { generateImage } = useImageGeneration();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState<"recent" | "alphabetical" | "usage">("recent");
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -139,6 +142,35 @@ export default function MyPrompts() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este prompt?')) {
       await deletePrompt(id);
+    }
+  };
+
+  const handleGenerateImage = async (id: string, content: string) => {
+    if (!content.trim()) {
+      toast({
+        title: "Conteúdo vazio",
+        description: "O prompt precisa ter conteúdo para gerar uma imagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImageId(id);
+    try {
+      const imageUrl = await generateImage(content);
+      
+      if (imageUrl) {
+        await updatePrompt(id, { previewImage: imageUrl });
+        await refetch(true);
+        toast({
+          title: "Imagem gerada! ✨",
+          description: "A imagem foi gerada e atualizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao gerar imagem:', error);
+    } finally {
+      setGeneratingImageId(null);
     }
   };
 
@@ -271,6 +303,8 @@ export default function MyPrompts() {
               onCopy={handleCopy}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onGenerateImage={handleGenerateImage}
+              isGeneratingImage={generatingImageId === prompt.id}
               loadPreview={() => {}}
             />
           ))}

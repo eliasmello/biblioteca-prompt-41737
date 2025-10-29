@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
+import { useToast } from "@/hooks/use-toast";
 import {
   FileText,
   FolderOpen,
@@ -20,7 +22,10 @@ import {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { personalPrompts, loading } = usePrompts();
+  const { personalPrompts, loading, updatePrompt, refetch } = usePrompts();
+  const { generateImage } = useImageGeneration();
+  const { toast } = useToast();
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   
   // Use personal prompts on dashboard (user's own prompts)
   const prompts = personalPrompts;
@@ -100,6 +105,35 @@ export default function Dashboard() {
   }, [prompts]);
 
   const maxCategoryCount = useMemo(() => Math.max(1, ...topCategories.map(c => c.count)), [topCategories]);
+
+  const handleGenerateImage = async (id: string, content: string) => {
+    if (!content.trim()) {
+      toast({
+        title: "Conteúdo vazio",
+        description: "O prompt precisa ter conteúdo para gerar uma imagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImageId(id);
+    try {
+      const imageUrl = await generateImage(content);
+      
+      if (imageUrl) {
+        await updatePrompt(id, { previewImage: imageUrl });
+        await refetch(true);
+        toast({
+          title: "Imagem gerada! ✨",
+          description: "A imagem foi gerada e atualizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao gerar imagem:', error);
+    } finally {
+      setGeneratingImageId(null);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -188,8 +222,21 @@ export default function Dashboard() {
                       {prompt.usageCount} uses • {new Date(prompt.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Sparkles className="w-4 h-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGenerateImage(prompt.id, prompt.title);
+                    }}
+                    disabled={generatingImageId === prompt.id}
+                    title="Gerar imagem com IA"
+                  >
+                    {generatingImageId === prompt.id ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               ))}

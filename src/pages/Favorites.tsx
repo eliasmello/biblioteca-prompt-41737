@@ -1,18 +1,23 @@
 import { useMemo, useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
 import { usePrompts } from "@/hooks/usePrompts";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 import { Prompt } from "@/types/prompt";
 import { Upload } from "lucide-react";
 
 export default function Favorites() {
-  const { prompts, loading, updatePrompt, deletePrompt, fetchPreviewImage } = usePrompts();
+  const { prompts, loading, updatePrompt, deletePrompt, fetchPreviewImage, refetch } = usePrompts();
+  const { generateImage } = useImageGeneration();
+  const { toast } = useToast();
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
 
   useSEO({
     title: "Favoritos — Prompts favoritados",
@@ -45,6 +50,35 @@ export default function Favorites() {
   const handleDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir este prompt?")) {
       await deletePrompt(id);
+    }
+  };
+
+  const handleGenerateImage = async (id: string, content: string) => {
+    if (!content.trim()) {
+      toast({
+        title: "Conteúdo vazio",
+        description: "O prompt precisa ter conteúdo para gerar uma imagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImageId(id);
+    try {
+      const imageUrl = await generateImage(content);
+      
+      if (imageUrl) {
+        await updatePrompt(id, { previewImage: imageUrl });
+        await refetch(true);
+        toast({
+          title: "Imagem gerada! ✨",
+          description: "A imagem foi gerada e atualizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao gerar imagem:', error);
+    } finally {
+      setGeneratingImageId(null);
     }
   };
 
@@ -95,6 +129,8 @@ export default function Favorites() {
                 onCopy={handleCopy}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onGenerateImage={handleGenerateImage}
+                isGeneratingImage={generatingImageId === prompt.id}
                 loadPreview={fetchPreviewImage}
                 variant="grid"
               />

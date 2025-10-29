@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ export default function Prompts() {
     refetch,
     fetchPreviewImage
   } = usePrompts();
+  const { generateImage } = useImageGeneration();
 
   // Combine personal and public prompts
   const allPrompts = useMemo(() => {
@@ -75,6 +77,7 @@ export default function Prompts() {
   const [minNumber, setMinNumber] = useState<string>('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -153,6 +156,36 @@ export default function Prompts() {
       });
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  const handleGenerateImage = async (id: string, content: string) => {
+    if (!content.trim()) {
+      toast({
+        title: "Conteúdo vazio",
+        description: "O prompt precisa ter conteúdo para gerar uma imagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImageId(id);
+    try {
+      const imageUrl = await generateImage(content);
+      
+      if (imageUrl) {
+        await updatePrompt(id, { previewImage: imageUrl });
+        await refetch(true);
+        await refetch(false);
+        toast({
+          title: "Imagem gerada! ✨",
+          description: "A imagem foi gerada e atualizada com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao gerar imagem:', error);
+    } finally {
+      setGeneratingImageId(null);
     }
   };
 
@@ -445,6 +478,8 @@ export default function Prompts() {
               onCopy={handleCopy}
               onEdit={undefined}
               onDelete={undefined}
+              onGenerateImage={handleGenerateImage}
+              isGeneratingImage={generatingImageId === prompt.id}
               loadPreview={fetchPreviewImage}
               variant={viewMode}
             />

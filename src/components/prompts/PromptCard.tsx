@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon } from "lucide-react";
+import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef, memo } from "react";
 
@@ -12,11 +12,13 @@ interface PromptCardProps {
   onCopy: (content: string) => void;
   onEdit?: (id: string, promptData?: { content: string; previewImage?: string | null }) => void;
   onDelete?: (id: string) => void;
+  onGenerateImage?: (id: string, content: string) => Promise<void>;
+  isGeneratingImage?: boolean;
   loadPreview: (id: string) => void;
   variant?: 'grid' | 'list';
 }
 
-function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, loadPreview, variant = 'grid' }: PromptCardProps) {
+function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, onGenerateImage, isGeneratingImage, loadPreview, variant = 'grid' }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
   const [requestedImage, setRequestedImage] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -119,6 +121,25 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
             >
               <Copy className="w-3 h-3" />
             </Button>
+            {onGenerateImage && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenerateImage(prompt.id, cleanPromptContent(prompt.content));
+                }}
+                disabled={isGeneratingImage}
+                className="w-8 h-8 p-0"
+                title="Gerar imagem com IA"
+              >
+                {isGeneratingImage ? (
+                  <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+              </Button>
+            )}
             {onEdit && (
               <Button
                 size="sm"
@@ -196,6 +217,25 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                   >
                     <Copy className="w-3 h-3" />
                   </Button>
+                  {onGenerateImage && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onGenerateImage(prompt.id, cleanPromptContent(prompt.content));
+                      }}
+                      disabled={isGeneratingImage}
+                      className="w-8 h-8 p-0"
+                      title="Gerar imagem com IA"
+                    >
+                      {isGeneratingImage ? (
+                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3 h-3" />
+                      )}
+                    </Button>
+                  )}
                   {onEdit && (
                     <Button
                       size="sm"
