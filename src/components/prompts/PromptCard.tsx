@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import { useState, useEffect, useRef, memo } from "react";
 
 interface PromptCardProps {
@@ -185,16 +185,16 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                       </Badge>
                     )}
                     <Badge className="bg-primary text-primary-foreground text-xs">
-                      {prompt.category}
+                      {toTitleCase(prompt.category)}
                     </Badge>
                     {prompt.subcategory && (
                       <Badge variant="outline" className="text-xs">
-                        {prompt.subcategory}
+                        {toTitleCase(prompt.subcategory)}
                       </Badge>
                     )}
                   </div>
                   <h3 className="mt-2 font-semibold text-lg leading-tight line-clamp-1 md:line-clamp-2 group-hover:text-primary transition-colors">
-                    {prompt.title}
+                    {toTitleCase(prompt.title)}
                   </h3>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -277,17 +277,17 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                   </Badge>
                 )}
                 <Badge className="bg-primary text-primary-foreground text-xs">
-                  {prompt.category}
+                  {toTitleCase(prompt.category)}
                 </Badge>
                 {prompt.subcategory && (
                   <Badge variant="outline" className="text-xs">
-                    {prompt.subcategory}
+                    {toTitleCase(prompt.subcategory)}
                   </Badge>
                 )}
               </div>
               
               <h3 className="font-semibold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                {prompt.title}
+                {toTitleCase(prompt.title)}
               </h3>
             </div>
           )}
@@ -302,12 +302,12 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
             <div className="flex flex-wrap gap-1 mb-4">
               {prompt.styleTags?.slice(0, 3).map((tag: string) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
+                  {toTitleCase(tag)}
                 </Badge>
               ))}
               {prompt.subjectTags?.slice(0, 2).map((tag: string) => (
                 <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
+                  {toTitleCase(tag)}
                 </Badge>
               ))}
               {(prompt.styleTags?.length > 3 || prompt.subjectTags?.length > 2) && (

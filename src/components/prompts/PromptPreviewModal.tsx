@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Copy, Star, Edit } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 
 interface PromptPreviewModalProps {
   isOpen: boolean;
@@ -90,16 +90,16 @@ export function PromptPreviewModal({
                 </Badge>
               )}
               <Badge className="bg-primary text-primary-foreground">
-                {prompt.category}
+                {toTitleCase(prompt.category)}
               </Badge>
               {prompt.subcategory && (
                 <Badge variant="outline">
-                  {prompt.subcategory}
+                  {toTitleCase(prompt.subcategory)}
                 </Badge>
               )}
             </div>
             <DialogTitle className="text-xl font-bold gradient-text">
-              {prompt.title}
+              {toTitleCase(prompt.title)}
             </DialogTitle>
           </div>
         </DialogHeader>
@@ -148,7 +148,7 @@ export function PromptPreviewModal({
                   <div className="flex flex-wrap gap-1">
                     {prompt.styleTags.map((tag) => (
                       <Badge key={tag} variant="outline" className="bg-primary-muted text-primary">
-                        {tag}
+                        {toTitleCase(tag)}
                       </Badge>
                     ))}
                   </div>
@@ -161,7 +161,7 @@ export function PromptPreviewModal({
                   <div className="flex flex-wrap gap-1">
                     {prompt.subjectTags.map((tag) => (
                       <Badge key={tag} variant="outline" className="bg-accent-muted text-accent">
-                        {tag}
+                        {toTitleCase(tag)}
                       </Badge>
                     ))}
                   </div>
@@ -174,7 +174,7 @@ export function PromptPreviewModal({
                   <div className="flex flex-wrap gap-1">
                     {prompt.tags.map((tag) => (
                       <Badge key={tag} variant="secondary">
-                        {tag}
+                        {toTitleCase(tag)}
                       </Badge>
                     ))}
                   </div>
