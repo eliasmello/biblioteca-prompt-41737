@@ -38,11 +38,18 @@ export function useImageGeneration(): UseImageGenerationReturn {
         } else if (data.error.includes('Credits')) {
           toast({
             title: 'Créditos insuficientes',
-            description: 'Adicione mais créditos para continuar gerando imagens.',
+            description: 'Adicione mais créditos ao seu workspace em Settings → Workspace → Usage.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro ao gerar imagem',
+            description: data.error,
             variant: 'destructive',
           });
         }
-        throw new Error(data.error);
+        setError(data.error);
+        return null;
       }
 
       if (data?.imageUrl) {
@@ -89,11 +96,18 @@ export function useImageGeneration(): UseImageGenerationReturn {
         } else if (data.error.includes('Credits')) {
           toast({
             title: 'Créditos insuficientes',
-            description: 'Adicione mais créditos para continuar editando imagens.',
+            description: 'Adicione mais créditos ao seu workspace em Settings → Workspace → Usage.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro ao editar imagem',
+            description: data.error,
             variant: 'destructive',
           });
         }
-        throw new Error(data.error);
+        setError(data.error);
+        return null;
       }
 
       if (data?.imageUrl) {
