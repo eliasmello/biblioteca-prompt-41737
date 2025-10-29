@@ -17,6 +17,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Favorites from "./pages/Favorites";
+import SecurityTests from "./pages/SecurityTests";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +113,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Settings />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/security-tests" element={
+              <ProtectedRoute>
+                <Layout>
+                  <SecurityTests />
                 </Layout>
               </ProtectedRoute>
             } />
