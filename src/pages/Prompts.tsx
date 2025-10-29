@@ -15,6 +15,7 @@ import { PromptCard } from "@/components/prompts/PromptCard";
 import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
 import ImportDialog from "@/components/prompts/ImportDialog";
+import ExportDialog from "@/components/prompts/ExportDialog";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -148,25 +149,6 @@ export default function Prompts() {
     }
   };
 
-  const handleExport = () => {
-    const exportData = filteredPrompts.map(prompt => ({
-      title: prompt.title,
-      category: prompt.category,
-      subcategory: prompt.subcategory,
-      content: prompt.content,
-      description: prompt.description,
-      number: prompt.number
-    }));
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'prompts-export.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
 
   // Debounce search query to improve performance
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -276,10 +258,12 @@ export default function Prompts() {
             <Settings className="w-4 h-4" />
             Categorias
           </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExport}>
-            <Download className="w-4 h-4" />
-            Exportar
-          </Button>
+          <ExportDialog prompts={filteredPrompts} defaultFilename="prompts">
+            <Button variant="outline" className="gap-2">
+              <Download className="w-4 h-4" />
+              Exportar
+            </Button>
+          </ExportDialog>
           {isMaster && (
             <>
               <ImportDialog onImport={handleImport} isImporting={isImporting} />

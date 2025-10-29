@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Upload, FileText, FileSpreadsheet, File } from 'lucide-react';
+import { Upload, FileText, FileSpreadsheet, File, FileJson } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImportDialogProps {
@@ -29,6 +29,7 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
   const [progress, setProgress] = useState(0);
 
   const supportedFormats = [
+    { ext: '.json', icon: FileJson, desc: 'Backup de prompts (recomendado)' },
     { ext: '.txt', icon: FileText, desc: 'Arquivo de texto' },
     { ext: '.doc', icon: FileText, desc: 'Documento Word' },
     { ext: '.docx', icon: FileText, desc: 'Documento Word' },
@@ -50,6 +51,43 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const processJsonFile = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const json = JSON.parse(text);
+          
+          // Validar se é um array de prompts
+          if (!Array.isArray(json)) {
+            reject(new Error('O arquivo JSON deve conter um array de prompts'));
+            return;
+          }
+          
+          if (json.length === 0) {
+            reject(new Error('O arquivo JSON não contém prompts'));
+            return;
+          }
+          
+          // Converter cada prompt para texto formatado
+          const promptsText = json.map((prompt: any, index: number) => {
+            let text = `**[${prompt.category || 'Geral'}${prompt.subcategory ? '/' + prompt.subcategory : ''}]**\n`;
+            text += `**${index + 1}. Prompt: ${prompt.title}**\n\n`;
+            text += prompt.content;
+            return text;
+          }).join('\n\n---\n\n');
+          
+          resolve(promptsText);
+        } catch (error) {
+          reject(new Error('Erro ao processar arquivo JSON: ' + (error instanceof Error ? error.message : 'formato inválido')));
+        }
+      };
       reader.onerror = reject;
       reader.readAsText(file);
     });
@@ -146,6 +184,9 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
       setProgress(25);
 
       switch (fileExtension) {
+        case 'json':
+          extractedText = await processJsonFile(file);
+          break;
         case 'txt':
           extractedText = await processTextFile(file);
           break;
@@ -229,7 +270,7 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
             <input
               id="file-upload"
               type="file"
-              accept=".txt,.doc,.docx,.xls,.xlsx,.csv,.pdf"
+              accept=".json,.txt,.doc,.docx,.xls,.xlsx,.csv,.pdf"
               onChange={handleFileUpload}
               disabled={processing}
               className="block w-full text-sm text-muted-foreground

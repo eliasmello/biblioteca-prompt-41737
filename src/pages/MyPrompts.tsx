@@ -10,7 +10,8 @@ import { PromptCard } from "@/components/prompts/PromptCard";
 import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import CategorySelect from "@/components/prompts/CategorySelect";
 import ImportDialog from "@/components/prompts/ImportDialog";
-import { Search, Plus, FileText, Import } from "lucide-react";
+import ExportDialog from "@/components/prompts/ExportDialog";
+import { Search, Plus, FileText, Import, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useSEO } from "@/hooks/useSEO";
@@ -164,6 +165,12 @@ export default function MyPrompts() {
         </div>
         
         <div className="flex gap-2">
+          <ExportDialog prompts={filteredPrompts} defaultFilename="meus-prompts">
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </ExportDialog>
           <Button onClick={() => setShowImportDialog(true)} variant="outline">
             <Import className="h-4 w-4 mr-2" />
             Importar
