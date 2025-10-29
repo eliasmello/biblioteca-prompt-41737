@@ -473,7 +473,10 @@ export const usePrompts = () => {
 
   useEffect(() => {
     if (user) {
-      fetchPrompts();
+      // Buscar prompts pessoais (para Dashboard e "Meus Prompts")
+      fetchPrompts(true);
+      // Buscar prompts públicos (para Galeria Pública)
+      fetchPrompts(false);
     }
   }, [user, fetchPrompts]);
 
