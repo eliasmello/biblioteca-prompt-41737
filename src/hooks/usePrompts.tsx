@@ -184,6 +184,7 @@ export const usePrompts = () => {
     if (promptData.isFavorite !== undefined) dbUpdates.is_favorite = promptData.isFavorite;
     if (promptData.usageCount !== undefined) dbUpdates.usage_count = promptData.usageCount;
     if (promptData.previewImage !== undefined) dbUpdates.preview_image = promptData.previewImage;
+    if (promptData.isPublic !== undefined) dbUpdates.is_public = promptData.isPublic;
     
     dbUpdates.updated_by = user.id;
     
@@ -194,7 +195,7 @@ export const usePrompts = () => {
       .select(`
         id, title, category, subcategory, content, description, number,
         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, preview_image
+        is_favorite, usage_count, created_at, updated_at, preview_image, is_public
       `)
       .single();
 
@@ -216,7 +217,8 @@ export const usePrompts = () => {
         usageCount: data.usage_count,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
-        previewImage: data.preview_image
+        previewImage: data.preview_image,
+        isPublic: data.is_public
       };
       
       // Update in both arrays if needed
