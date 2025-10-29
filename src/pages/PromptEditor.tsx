@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import PromptForm from '@/components/prompts/PromptForm';
+import { VersionHistoryDialog } from '@/components/prompts/VersionHistoryDialog';
 import { usePrompts } from '@/hooks/usePrompts';
 import { useToast } from '@/hooks/use-toast';
 import { Prompt } from '@/types/prompt';
@@ -17,6 +18,7 @@ export default function PromptEditor() {
   const [prompt, setPrompt] = useState<Prompt | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingPrompt, setIsFetchingPrompt] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   const isEditing = Boolean(id);
 
@@ -158,26 +160,39 @@ export default function PromptEditor() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/prompts')}
-          className="gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">
-            {isEditing ? 'Editar Prompt' : 'Novo Prompt'}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {isEditing 
-              ? 'Faça as alterações necessárias no seu prompt' 
-              : 'Crie um novo prompt para sua coleção'
-            }
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/prompts')}
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">
+              {isEditing ? 'Editar Prompt' : 'Novo Prompt'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isEditing 
+                ? 'Faça as alterações necessárias no seu prompt' 
+                : 'Crie um novo prompt para sua coleção'
+              }
+            </p>
+          </div>
         </div>
+        
+        {isEditing && prompt && (
+          <Button
+            variant="outline"
+            onClick={() => setShowVersionHistory(true)}
+            className="gap-2"
+          >
+            <Clock className="w-4 h-4" />
+            Ver Histórico
+          </Button>
+        )}
       </div>
 
       {/* Form */}
@@ -187,6 +202,27 @@ export default function PromptEditor() {
         onCancel={handleCancel}
         isSubmitting={isSubmitting}
       />
+
+      {/* Version History Dialog */}
+      {isEditing && prompt && (
+        <VersionHistoryDialog
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+          promptId={prompt.id}
+          currentVersion={{
+            title: prompt.title,
+            content: prompt.content,
+            category: prompt.category,
+            subcategory: prompt.subcategory,
+          }}
+          onVersionRestored={() => {
+            // Recarregar o prompt após restaurar versão
+            getPromptById(prompt.id).then(fetched => {
+              if (fetched) setPrompt(fetched);
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

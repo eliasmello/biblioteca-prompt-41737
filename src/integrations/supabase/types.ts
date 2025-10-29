@@ -91,6 +91,71 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_versions: {
+        Row: {
+          category: string
+          change_summary: string | null
+          content: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          keywords: string[] | null
+          preview_image: string | null
+          prompt_id: string
+          style_tags: string[] | null
+          subcategory: string | null
+          subject_tags: string[] | null
+          tags: string[] | null
+          title: string
+          version_number: number
+        }
+        Insert: {
+          category: string
+          change_summary?: string | null
+          content: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          preview_image?: string | null
+          prompt_id: string
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title: string
+          version_number: number
+        }
+        Update: {
+          category?: string
+          change_summary?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          preview_image?: string | null
+          prompt_id?: string
+          style_tags?: string[] | null
+          subcategory?: string | null
+          subject_tags?: string[] | null
+          tags?: string[] | null
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_versions_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompts: {
         Row: {
           category: string
