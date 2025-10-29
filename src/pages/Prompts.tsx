@@ -42,7 +42,8 @@ export default function Prompts() {
   const { toast } = useToast();
   const { user, hasRole } = useAuth();
   const { 
-    prompts, 
+    personalPrompts,
+    publicPrompts,
     loading, 
     createPrompt, 
     updatePrompt, 
@@ -51,6 +52,11 @@ export default function Prompts() {
     refetch,
     fetchPreviewImage
   } = usePrompts();
+
+  // Combine personal and public prompts
+  const allPrompts = useMemo(() => {
+    return [...personalPrompts, ...publicPrompts];
+  }, [personalPrompts, publicPrompts]);
 
   const isMaster = hasRole('master');
 
@@ -81,24 +87,25 @@ export default function Prompts() {
     description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
   });
 
-  // Fetch system prompts
+  // Fetch all prompts (personal + public)
   useEffect(() => {
     if (user) {
-      refetch(false); // false = fetch public system prompts only
+      refetch(true);  // Fetch personal prompts
+      refetch(false); // Fetch public prompts
     }
   }, [user, refetch]);
 
-  // Get unique categories from prompts (alphabetically sorted)
+  // Get unique categories from allPrompts (alphabetically sorted)
   const categories = [
     { value: "all", label: "Todas as Categorias" },
-    ...Array.from(new Set(prompts.map(p => p.category)))
+    ...Array.from(new Set(allPrompts.map(p => p.category)))
       .filter(Boolean)
       .map(cat => ({ value: cat.toLowerCase(), label: cat }))
       .sort((a, b) => a.label.localeCompare(b.label))
   ];
 
   const handlePreview = (id: string) => {
-    const prompt = prompts.find(p => p.id === id);
+    const prompt = allPrompts.find(p => p.id === id);
     if (prompt) {
       setSelectedPrompt(prompt);
       setIsPreviewOpen(true);
@@ -106,7 +113,7 @@ export default function Prompts() {
   };
 
   const handleToggleFavorite = async (id: string) => {
-    const prompt = prompts.find(p => p.id === id);
+    const prompt = allPrompts.find(p => p.id === id);
     if (prompt) {
       await updatePrompt(id, { isFavorite: !prompt.isFavorite });
     }
@@ -154,7 +161,7 @@ export default function Prompts() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const sortedPrompts = useMemo(() => {
-    return [...prompts].sort((a, b) => {
+    return [...allPrompts].sort((a, b) => {
       switch (sortBy) {
         case 'popular':
           return (b.usageCount || 0) - (a.usageCount || 0);
@@ -183,7 +190,7 @@ export default function Prompts() {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
-  }, [prompts, sortBy]);
+  }, [allPrompts, sortBy]);
 
   const filteredPrompts = useMemo(() => {
     return sortedPrompts.filter(prompt => {
@@ -399,7 +406,7 @@ export default function Prompts() {
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Mostrando {filteredPrompts.length} de {prompts.length} prompts
+          Mostrando {filteredPrompts.length} de {allPrompts.length} prompts
         </p>
         <Button 
           variant="ghost" 
