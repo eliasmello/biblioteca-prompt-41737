@@ -11,7 +11,7 @@ interface User {
   id: string;
   name: string;
   email?: string;
-  role: 'user' | 'admin' | 'master';
+  roles: string[];
   is_active: boolean;
   created_at: string;
 }
@@ -27,14 +27,14 @@ export default function EditUserDialog({ user, open, onOpenChange, onUserUpdated
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    role: 'user' as 'user' | 'admin' | 'master'
+    selectedRoles: [] as string[]
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name,
-        role: user.role
+        selectedRoles: user.roles
       });
     }
   }, [user]);
@@ -49,21 +49,41 @@ export default function EditUserDialog({ user, open, onOpenChange, onUserUpdated
       return;
     }
     
+    if (formData.selectedRoles.length === 0) {
+      toast.error("Por favor, selecione pelo menos uma role.");
+      return;
+    }
+    
     setLoading(true);
     
     try {
-      const { error } = await supabase
+      // Update profile name
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          name: formData.name.trim(),
-          role: formData.role
-        })
+        .update({ display_name: formData.name.trim() })
         .eq('id', user.id);
 
-      if (error) {
-        console.error('Erro ao atualizar usuário:', error);
-        throw error;
-      }
+      if (profileError) throw profileError;
+      
+      // Delete existing roles
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+      
+      // Insert new roles (cast to proper type)
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .insert(
+          formData.selectedRoles.map(role => ({
+            user_id: user.id,
+            role: role as 'user' | 'admin' | 'master'
+          }))
+        );
+
+      if (rolesError) throw rolesError;
       
       toast.success("Usuário atualizado com sucesso!");
       onOpenChange(false);
@@ -101,10 +121,10 @@ export default function EditUserDialog({ user, open, onOpenChange, onUserUpdated
             />
           </div>
           <div>
-            <Label htmlFor="edit-role">Função</Label>
+            <Label htmlFor="edit-role">Função Principal</Label>
             <Select 
-              value={formData.role} 
-              onValueChange={(value: 'user' | 'admin' | 'master') => setFormData({ ...formData, role: value })}
+              value={formData.selectedRoles[0] || 'user'} 
+              onValueChange={(value: string) => setFormData({ ...formData, selectedRoles: [value] })}
               disabled={loading}
             >
               <SelectTrigger>
@@ -116,6 +136,9 @@ export default function EditUserDialog({ user, open, onOpenChange, onUserUpdated
                 <SelectItem value="master">Master</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-sm text-muted-foreground mt-1">
+              A role do usuário determina suas permissões no sistema
+            </p>
           </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={loading}>

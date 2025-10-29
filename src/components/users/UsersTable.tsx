@@ -13,7 +13,7 @@ interface User {
   id: string;
   name: string;
   email?: string;
-  role: 'user' | 'admin' | 'master';
+  roles: string[];
   is_active: boolean;
   created_at: string;
 }
@@ -104,9 +104,16 @@ export default function UsersTable({ users, onUserUpdated }: UsersTableProps) {
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant={user.role === 'master' ? 'default' : user.role === 'admin' ? 'secondary' : 'outline'}>
-                        {user.role === 'master' ? 'Master' : user.role === 'admin' ? 'Admin' : 'Usuário'}
-                      </Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        {user.roles.map(role => (
+                          <Badge 
+                            key={role}
+                            variant={role === 'master' ? 'default' : role === 'admin' ? 'secondary' : 'outline'}
+                          >
+                            {role === 'master' ? 'Master' : role === 'admin' ? 'Admin' : 'Usuário'}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.is_active ? 'default' : 'destructive'}>
@@ -133,13 +140,13 @@ export default function UsersTable({ users, onUserUpdated }: UsersTableProps) {
                           onClick={() => handleDelete(user.id)}
                           disabled={
                             user.id === currentUser?.id || 
-                            user.role === 'master' || 
+                            user.roles.includes('master') || 
                             deletingUserId === user.id
                           }
                           title={
                             user.id === currentUser?.id 
                               ? "Não é possível excluir seu próprio usuário"
-                              : user.role === 'master'
+                              : user.roles.includes('master')
                               ? "Não é possível excluir usuário master"
                               : "Excluir usuário"
                           }

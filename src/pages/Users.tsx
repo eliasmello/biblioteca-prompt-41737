@@ -16,7 +16,7 @@ interface User {
   id: string;
   name: string;
   email?: string;
-  role: 'user' | 'admin' | 'master';
+  roles: string[];
   is_active: boolean;
   created_at: string;
 }
@@ -44,11 +44,12 @@ interface Registration {
 }
 
 export default function Users() {
-  const { profile } = useAuth();
+  const { hasRole } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMaster = hasRole('master');
 
   useSEO({
     title: "Gerenciar Usuários",
@@ -56,7 +57,7 @@ export default function Users() {
   });
 
   useEffect(() => {
-    if (profile?.role !== 'master') {
+    if (!isMaster) {
       toast.error("Acesso negado. Apenas o Master User pode gerenciar usuários.");
       return;
     }
@@ -69,7 +70,7 @@ export default function Users() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [profile]);
+  }, [isMaster]);
 
   const fetchUsersInvitationsAndRegistrations = async () => {
     await Promise.all([fetchUsers(), fetchInvitations(), fetchRegistrations()]);
@@ -77,32 +78,35 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          display_name,
-          role,
-          created_at
-        `)
+        .select('id, display_name, created_at')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Erro ao buscar usuários:', error);
-        throw error;
+      if (profilesError) {
+        console.error('Erro ao buscar usuários:', profilesError);
+        throw profilesError;
       }
       
-      // Map profiles without trying to get email from auth.admin (requires service role)
-      const users = (data || []).map((profile) => ({
-        id: profile.id,
-        name: profile.display_name || 'Sem nome',
-        email: undefined, // Email não disponível sem service role
-        role: profile.role as 'user' | 'admin' | 'master',
-        is_active: true, // Assume ativo
-        created_at: profile.created_at
-      }));
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        (profilesData || []).map(async (profile) => {
+          const { data: rolesData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id);
+          
+          return {
+            id: profile.id,
+            name: profile.display_name || 'Sem nome',
+            roles: rolesData?.map(r => r.role) || [],
+            is_active: true,
+            created_at: profile.created_at
+          };
+        })
+      );
 
-      setUsers(users);
+      setUsers(usersWithRoles);
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
       toast.error(`Erro ao carregar usuários: ${error.message || 'Erro desconhecido'}`);
@@ -167,12 +171,12 @@ export default function Users() {
   };
 
   // Access control
-  if (profile?.role !== 'master') {
+  if (!isMaster) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="flex items-center justify-center h-32">
-            <p className="text-muted-foreground">Acesso negado. Apenas o Master User pode acessar esta página.</p>
+            <p className="text-muted-foreground">Acesso negado. Apenas Master users podem acessar esta página.</p>
           </CardContent>
         </Card>
       </div>

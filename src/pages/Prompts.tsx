@@ -39,7 +39,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 export default function Prompts() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const { 
     prompts, 
     loading, 
@@ -51,7 +51,7 @@ export default function Prompts() {
     fetchPreviewImage
   } = usePrompts();
 
-  const [isMaster, setIsMaster] = useState(false);
+  const isMaster = hasRole('master');
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
@@ -80,10 +80,9 @@ export default function Prompts() {
     description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
   });
 
-  // Check if user is master and fetch system prompts
+  // Fetch system prompts
   useEffect(() => {
     if (user) {
-      setIsMaster(user.email === 'eliasmello@ateliedepropaganda.com.br');
       refetch(false); // false = fetch public system prompts only
     }
   }, [user, refetch]);

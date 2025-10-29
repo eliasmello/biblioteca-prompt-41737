@@ -7,9 +7,9 @@ interface Profile {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
-  role: string;
   created_at: string;
   updated_at: string;
+  email?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +17,9 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  roles: string[];
+  hasRole: (role: string) => boolean;
+  primaryRole: string | null;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -29,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<string[]>([]);
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
@@ -47,6 +51,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error in fetchProfile:', error);
       return null;
+    }
+  };
+
+  const fetchUserRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error fetching roles:', error);
+        return [];
+      }
+      return data?.map(r => r.role) || [];
+    } catch (error) {
+      console.error('Error in fetchUserRoles:', error);
+      return [];
     }
   };
 
@@ -71,16 +93,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
           profileFetched = true;
           
-          // Fetch profile only once per session
-          fetchProfile(session.user.id).then(profileData => {
+          // Fetch profile and roles only once per session
+          Promise.all([
+            fetchProfile(session.user.id),
+            fetchUserRoles(session.user.id)
+          ]).then(([profileData, rolesData]) => {
             if (mounted) {
               setProfile(profileData as Profile);
+              setRoles(rolesData);
             }
           }).catch(error => {
-            console.error('Error fetching profile:', error);
+            console.error('Error fetching profile/roles:', error);
           });
         } else if (!session?.user) {
           setProfile(null);
+          setRoles([]);
           setLoading(false);
           profileFetched = false;
         }
@@ -106,12 +133,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
           profileFetched = true;
           
-          fetchProfile(session.user.id).then(profileData => {
+          Promise.all([
+            fetchProfile(session.user.id),
+            fetchUserRoles(session.user.id)
+          ]).then(([profileData, rolesData]) => {
             if (mounted) {
               setProfile(profileData as Profile);
+              setRoles(rolesData);
             }
           }).catch(error => {
-            console.error('Error fetching profile on mount:', error);
+            console.error('Error fetching profile/roles on mount:', error);
           });
         } else {
           if (mounted) setLoading(false);
@@ -211,6 +242,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setProfile(null);
+      setRoles([]);
       toast({
         title: "Logout realizado",
         description: "Até logo!"
@@ -225,12 +257,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const hasRole = (role: string) => {
+    return roles.includes(role);
+  };
+
+  const primaryRole = roles.includes('master') ? 'master' : 
+                      roles.includes('admin') ? 'admin' : 
+                      roles.includes('user') ? 'user' : null;
+
   return (
     <AuthContext.Provider value={{
       user,
       session,
       profile,
       loading,
+      roles,
+      hasRole,
+      primaryRole,
       signUp,
       signIn,
       signOut

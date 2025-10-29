@@ -87,14 +87,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Perfil:</span>
-                          <Badge variant={profile?.role === 'master' ? 'default' : 'outline'}>
-                            {profile?.role === 'master' ? 'Master' : 'Usuário'}
-                          </Badge>
-                        </div>
-                      </div>
+                      {/* Role information removed - now in separate user_roles table */}
                     </div>
                   </PopoverContent>
                 </Popover>

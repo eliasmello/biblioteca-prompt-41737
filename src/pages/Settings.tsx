@@ -12,7 +12,7 @@ import { Settings as SettingsIcon, User, Lock, Shield } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function Settings() {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole, primaryRole } = useAuth();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     display_name: profile?.display_name || '',
@@ -142,8 +142,8 @@ export default function Settings() {
               <div>
                 <Label>Função</Label>
                 <div className="mt-2">
-                  <Badge variant={getRoleBadgeVariant(profile?.role || '')}>
-                    {getRoleLabel(profile?.role || '')}
+                  <Badge variant={primaryRole === 'master' ? 'default' : primaryRole === 'admin' ? 'secondary' : 'outline'}>
+                    {primaryRole === 'master' ? 'Master' : primaryRole === 'admin' ? 'Admin' : 'Usuário'}
                   </Badge>
                 </div>
               </div>
@@ -238,15 +238,15 @@ export default function Settings() {
               
               <div className="flex items-center justify-between">
                 <span>Editar prompts públicos</span>
-                <Badge variant={profile?.role === 'master' ? 'outline' : 'destructive'}>
-                  {profile?.role === 'master' ? 'Permitido' : 'Negado'}
+                <Badge variant={hasRole('master') ? 'outline' : 'destructive'}>
+                  {hasRole('master') ? 'Permitido' : 'Negado'}
                 </Badge>
               </div>
               
               <div className="flex items-center justify-between">
                 <span>Gerenciar usuários</span>
-                <Badge variant={profile?.role === 'master' ? 'outline' : 'destructive'}>
-                  {profile?.role === 'master' ? 'Permitido' : 'Negado'}
+                <Badge variant={hasRole('master') ? 'outline' : 'destructive'}>
+                  {hasRole('master') ? 'Permitido' : 'Negado'}
                 </Badge>
               </div>
             </div>

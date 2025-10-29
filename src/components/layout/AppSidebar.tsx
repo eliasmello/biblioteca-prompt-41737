@@ -154,16 +154,10 @@ export function AppSidebar() {
 
 
         {/* Admin Section */}
-        {(profile?.role === 'master') && (
-          <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">
-              {profile?.role === 'master' ? 'Master' : 'Admin'}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.filter(item => 
-                  item.url !== '/users' || profile?.role === 'master'
-                ).map((item) => (
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -176,16 +170,15 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={signOut}>
-                    <LogOut className="w-4 h-4" />
-                    {!collapsed && <span>Sair</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={signOut}>
+                  <LogOut className="w-4 h-4" />
+                  {!collapsed && <span>Sair</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );

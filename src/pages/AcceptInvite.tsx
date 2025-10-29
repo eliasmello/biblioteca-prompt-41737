@@ -127,14 +127,20 @@ export default function AcceptInvite() {
 
       if (updateError) throw updateError;
 
-      // Update user profile with role
+      // Insert role for new user (profile already created by trigger)
       if (userData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ role: invitation.role })
-          .eq('id', userData.user.id);
+        // The trigger should have created the user_roles entry, but we can ensure it
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userData.user.id,
+            role: invitation.role
+          });
 
-        if (profileError) throw profileError;
+        // Ignore conflict errors (role already exists from trigger)
+        if (roleError && !roleError.message.includes('duplicate')) {
+          throw roleError;
+        }
       }
 
       toast.success("Conta criada com sucesso! Você pode fazer login agora.");
