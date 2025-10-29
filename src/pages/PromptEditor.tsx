@@ -13,7 +13,7 @@ export default function PromptEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
-  const { prompts, createPrompt, updatePrompt, loading, fetchPreviewImage, getPromptById } = usePrompts();
+  const { createPrompt, updatePrompt, loading, getPromptById } = usePrompts();
   
   const [prompt, setPrompt] = useState<Prompt | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,28 +25,15 @@ export default function PromptEditor() {
   useEffect(() => {
     if (!isEditing || !id) return;
 
-    // Aguarda o carregamento completo para evitar falso negativo durante a paginação
-    if (loading) return;
-
-    const foundPrompt = prompts.find(p => p.id === id);
-    if (foundPrompt) {
-      setPrompt(foundPrompt);
-      if (!foundPrompt.previewImage) {
-        fetchPreviewImage(foundPrompt.id);
-      }
-      return;
-    }
-
     let isMounted = true;
     setIsFetchingPrompt(true);
+    
     (async () => {
       const fetched = await getPromptById(id);
       if (!isMounted) return;
+      
       if (fetched) {
         setPrompt(fetched);
-        if (!fetched.previewImage) {
-          fetchPreviewImage(fetched.id);
-        }
       } else {
         toast({
           title: "Erro",
@@ -59,7 +46,7 @@ export default function PromptEditor() {
     })();
 
     return () => { isMounted = false; };
-  }, [id, prompts, isEditing, toast, navigate, fetchPreviewImage, loading, getPromptById]);
+  }, [id, isEditing, getPromptById, toast, navigate]);
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
