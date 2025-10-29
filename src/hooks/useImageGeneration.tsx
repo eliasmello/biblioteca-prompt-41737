@@ -25,7 +25,30 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       if (functionError) {
         console.error('Function error:', functionError);
-        throw new Error(functionError.message);
+        // Trata erros HTTP específicos
+        const errorMessage = functionError.message || 'Erro desconhecido';
+        
+        if (errorMessage.includes('402') || errorMessage.includes('Credits exceeded')) {
+          toast({
+            title: 'Créditos insuficientes',
+            description: 'Adicione mais créditos ao seu workspace em Settings → Workspace → Usage.',
+            variant: 'destructive',
+          });
+        } else if (errorMessage.includes('429') || errorMessage.includes('Rate limit')) {
+          toast({
+            title: 'Limite atingido',
+            description: 'Muitas solicitações. Tente novamente em alguns instantes.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro ao gerar imagem',
+            description: errorMessage,
+            variant: 'destructive',
+          });
+        }
+        setError(errorMessage);
+        return null;
       }
 
       if (data?.error) {
@@ -83,7 +106,30 @@ export function useImageGeneration(): UseImageGenerationReturn {
 
       if (functionError) {
         console.error('Function error:', functionError);
-        throw new Error(functionError.message);
+        // Trata erros HTTP específicos
+        const errorMessage = functionError.message || 'Erro desconhecido';
+        
+        if (errorMessage.includes('402') || errorMessage.includes('Credits exceeded')) {
+          toast({
+            title: 'Créditos insuficientes',
+            description: 'Adicione mais créditos ao seu workspace em Settings → Workspace → Usage.',
+            variant: 'destructive',
+          });
+        } else if (errorMessage.includes('429') || errorMessage.includes('Rate limit')) {
+          toast({
+            title: 'Limite atingido',
+            description: 'Muitas solicitações. Tente novamente em alguns instantes.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro ao editar imagem',
+            description: errorMessage,
+            variant: 'destructive',
+          });
+        }
+        setError(errorMessage);
+        return null;
       }
 
       if (data?.error) {
