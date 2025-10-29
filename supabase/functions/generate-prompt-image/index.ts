@@ -5,19 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Function to compress base64 image (simplified version without OffscreenCanvas)
-async function compressImage(base64Data: string, _quality: number = 0.6): Promise<string> {
-  try {
-    // Simply return the original base64 data
-    // In production, you might want to use a different image processing library
-    console.log(`Image size: ${base64Data.length} characters`)
-    return base64Data
-  } catch (error) {
-    console.error('Compression failed:', error)
-    return base64Data
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -25,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json()
+    const { prompt, action = 'generate', imageUrl } = await req.json()
 
     if (!prompt) {
       return new Response(
@@ -34,46 +21,89 @@ serve(async (req) => {
       )
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set')
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured')
     }
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    // Build the message content based on action
+    let messageContent: any;
+    
+    if (action === 'edit' && imageUrl) {
+      // Edit existing image
+      messageContent = [
+        {
+          type: "text",
+          text: `Edit this image based on the following prompt: ${prompt}. Make it visually appealing as a thumbnail preview for an AI prompt.`
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: imageUrl
+          }
+        }
+      ];
+    } else {
+      // Generate new image
+      messageContent = `Create a visually appealing thumbnail image that represents this AI prompt: ${prompt.slice(0, 500)}. The image should be artistic, professional, and capture the essence of the prompt.`;
+    }
+
+    console.log(`${action === 'edit' ? 'Editing' : 'Generating'} image for prompt:`, prompt.slice(0, 100))
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: prompt.slice(0, 4000), // Limit prompt length
-        size: '512x512', // Smaller base; we'll compress to 256x256
-        quality: 'standard',
-        response_format: 'b64_json'
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
+          {
+            role: 'user',
+            content: messageContent
+          }
+        ],
+        modalities: ['image', 'text']
       })
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Failed to generate image')
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+        )
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Credits exceeded. Please add more credits to your workspace.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
+        )
+      }
+      const errorText = await response.text()
+      console.error('AI Gateway error:', response.status, errorText)
+      throw new Error(`AI Gateway error: ${response.status}`)
     }
 
     const data = await response.json()
-    const originalBase64 = data.data[0].b64_json
-    
-    // Compress the image significantly for thumbnail use
-    const compressedBase64 = await compressImage(originalBase64, 0.4)
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
+
+    if (!generatedImageUrl) {
+      throw new Error('No image generated')
+    }
+
+    console.log(`Image ${action === 'edit' ? 'edited' : 'generated'} successfully`)
     
     return new Response(
-      JSON.stringify({ imageUrl: `data:image/webp;base64,${compressedBase64}` }),
+      JSON.stringify({ imageUrl: generatedImageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     console.error('Error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: 'Failed to generate image', details: errorMessage }),
+      JSON.stringify({ error: 'Failed to process image', details: errorMessage }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

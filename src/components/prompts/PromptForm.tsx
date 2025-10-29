@@ -9,9 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImageIcon, Upload, X, Download, Globe, Lock } from 'lucide-react';
+import { ImageIcon, Upload, X, Download, Globe, Lock, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { Prompt } from '@/types/prompt';
 import CategorySelect from '@/components/prompts/CategorySelect';
+import { useImageGeneration } from '@/hooks/useImageGeneration';
+import { useToast } from '@/hooks/use-toast';
 
 const promptSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -35,6 +37,8 @@ interface PromptFormProps {
 
 export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptFormProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt?.previewImage || null);
+  const { generateImage, editImage, isLoading: isGeneratingImage } = useImageGeneration();
+  const { toast } = useToast();
 
   const form = useForm<PromptFormData>({
     resolver: zodResolver(promptSchema),
@@ -232,6 +236,39 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                   <div className="absolute top-2 right-2 flex gap-2">
                     <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={async () => {
+                        const content = form.watch('content');
+                        if (!content) {
+                          toast({
+                            title: 'Conteúdo necessário',
+                            description: 'Adicione o conteúdo do prompt para editar a imagem.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        const editedImage = await editImage(content, previewImage);
+                        if (editedImage) {
+                          setPreviewImage(editedImage);
+                          form.setValue('previewImage', editedImage, { shouldDirty: true });
+                          toast({
+                            title: 'Imagem editada!',
+                            description: 'A imagem foi editada com sucesso.',
+                          });
+                        }
+                      }}
+                      disabled={isGeneratingImage}
+                      aria-label="Editar imagem com IA"
+                    >
+                      {isGeneratingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={handleDownloadImage}
@@ -253,24 +290,67 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
               ) : (
                 <div className="flex flex-col items-center justify-center py-8">
                   <ImageIcon className="w-12 h-12 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-sm text-muted-foreground mb-4">
                     Adicionar imagem de preview
                   </p>
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" size="sm" asChild>
-                      <span>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Escolher arquivo
-                      </span>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={async () => {
+                        const content = form.watch('content');
+                        if (!content) {
+                          toast({
+                            title: 'Conteúdo necessário',
+                            description: 'Adicione o conteúdo do prompt antes de gerar a imagem.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        const generatedImage = await generateImage(content);
+                        if (generatedImage) {
+                          setPreviewImage(generatedImage);
+                          form.setValue('previewImage', generatedImage, { shouldDirty: true });
+                          toast({
+                            title: 'Imagem gerada!',
+                            description: 'A imagem foi gerada com sucesso pela IA.',
+                          });
+                        }
+                      }}
+                      disabled={isGeneratingImage}
+                      className="gap-2"
+                    >
+                      {isGeneratingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Gerando...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Gerar com IA
+                        </>
+                      )}
                     </Button>
-                  </Label>
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
+                    
+                    <Label htmlFor="image-upload" className="cursor-pointer">
+                      <Button type="button" variant="outline" size="sm" asChild>
+                        <span>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Fazer upload
+                        </span>
+                      </Button>
+                    </Label>
+                    <Input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
                 </div>
               )}
             </div>
