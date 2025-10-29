@@ -13,7 +13,8 @@ import {
   
   Lightbulb,
   LogOut,
-  Upload
+  Upload,
+  Globe
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrompts } from "@/hooks/usePrompts";
@@ -39,6 +40,7 @@ const mainItems = [
   { title: "Meus Prompts", url: "/my-prompts", icon: User },
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Favoritos", url: "/favorites", icon: Star },
+  { title: "Galeria Pública", url: "/gallery", icon: Globe },
 ];
 
 const adminItems = [

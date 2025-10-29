@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImageIcon, Upload, X, Download } from 'lucide-react';
+import { ImageIcon, Upload, X, Download, Globe, Lock } from 'lucide-react';
 import { Prompt } from '@/types/prompt';
 import CategorySelect from '@/components/prompts/CategorySelect';
 
@@ -19,7 +20,8 @@ const promptSchema = z.object({
   content: z.string().min(1, 'Conteúdo é obrigatório'),
   description: z.string().optional(),
   number: z.number().optional(),
-  previewImage: z.string().optional()
+  previewImage: z.string().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 type PromptFormData = z.infer<typeof promptSchema>;
@@ -43,7 +45,8 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
       content: prompt?.content || '',
       description: prompt?.description || '',
       number: prompt?.number || undefined,
-      previewImage: prompt?.previewImage || ''
+      previewImage: prompt?.previewImage || '',
+      isPublic: prompt?.isPublic || false,
     }
   });
 
@@ -57,7 +60,8 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
       content: prompt.content || '',
       description: prompt.description || '',
       number: prompt.number || undefined,
-      previewImage: prompt.previewImage || ''
+      previewImage: prompt.previewImage || '',
+      isPublic: prompt.isPublic || false,
     });
     setPreviewImage(prompt.previewImage || null);
   }, [prompt?.id, form]);
@@ -285,6 +289,33 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                 {form.formState.errors.content.message}
               </p>
             )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="is-public" className="font-semibold cursor-pointer">
+                    {form.watch('isPublic') ? (
+                      <><Globe className="w-4 h-4 inline mr-1" />Prompt Público</>
+                    ) : (
+                      <><Lock className="w-4 h-4 inline mr-1" />Prompt Privado</>
+                    )}
+                  </Label>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {form.watch('isPublic') 
+                    ? 'Este prompt será visível na galeria pública e poderá ser compartilhado.'
+                    : 'Este prompt será visível apenas para você.'
+                  }
+                </p>
+              </div>
+              <Switch
+                id="is-public"
+                checked={form.watch('isPublic')}
+                onCheckedChange={(checked) => form.setValue('isPublic', checked, { shouldDirty: true })}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2">

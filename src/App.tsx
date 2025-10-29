@@ -18,6 +18,8 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Favorites from "./pages/Favorites";
 import SecurityTests from "./pages/SecurityTests";
+import PublicGallery from "./pages/PublicGallery";
+import SharedPrompt from "./pages/SharedPrompt";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/shared/:id" element={<SharedPrompt />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
@@ -92,6 +95,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Favorites />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/gallery" element={
+              <ProtectedRoute>
+                <Layout>
+                  <PublicGallery />
                 </Layout>
               </ProtectedRoute>
             } />
