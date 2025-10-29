@@ -161,7 +161,6 @@ export default function MyPrompts() {
       
       if (imageUrl) {
         await updatePrompt(id, { previewImage: imageUrl });
-        await refetch(true);
         toast({
           title: "Imagem gerada! ✨",
           description: "A imagem foi gerada e atualizada com sucesso.",
