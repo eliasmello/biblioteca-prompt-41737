@@ -21,7 +21,6 @@ interface PromptCardProps {
 function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, onGenerateImage, isGeneratingImage, loadPreview, variant = 'grid' }: PromptCardProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
   const [requestedImage, setRequestedImage] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
@@ -32,24 +31,12 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
     setPreviewImage(prompt.previewImage || null);
   }, [prompt.previewImage]);
 
-  // Busca a imagem de preview apenas quando o card entrar na viewport
+  // Busca a imagem de preview imediatamente ao montar
   useEffect(() => {
-    const el = previewRef.current;
-    if (!el || previewImage || requestedImage) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting && !previewImage && !requestedImage) {
-          loadPreview(prompt.id);
-          setRequestedImage(true);
-          observer.disconnect();
-          break;
-        }
-      }
-    }, { rootMargin: '200px' });
-
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (!previewImage && !requestedImage) {
+      loadPreview(prompt.id);
+      setRequestedImage(true);
+    }
   }, [previewImage, requestedImage, loadPreview, prompt.id]);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -66,7 +53,6 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
           <div 
-            ref={previewRef}
             className={cn(
               variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
               'bg-muted rounded-lg overflow-hidden border border-border/50'
