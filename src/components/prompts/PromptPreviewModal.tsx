@@ -65,7 +65,7 @@ export function PromptPreviewModal({
               onClick={() => onToggleFavorite(prompt.id)}
               className={cn(
                 "h-8 w-8 p-0 hover:bg-accent/50 transition-colors",
-                prompt.isFavorite && "text-yellow-500 hover:text-yellow-600"
+                prompt.isFavorite && "text-favorite hover:text-favorite/80"
               )}
               title={prompt.isFavorite ? "Remove from favorites" : "Add to favorites"}
             >

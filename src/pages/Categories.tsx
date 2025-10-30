@@ -140,16 +140,16 @@ export default function Categories() {
   };
 
   const colors = [
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-yellow-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-indigo-500',
-    'bg-red-500',
-    'bg-orange-500',
-    'bg-teal-500',
-    'bg-cyan-500'
+    'bg-primary',
+    'bg-success',
+    'bg-favorite',
+    'bg-accent',
+    'bg-info',
+    'bg-warning',
+    'bg-destructive',
+    'bg-secondary',
+    'bg-muted-foreground',
+    'bg-primary'
   ];
 
   return (
@@ -191,8 +191,8 @@ export default function Categories() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Palette className="w-5 h-5 text-green-500" />
+              <div className="p-2 bg-success/10 rounded-lg">
+                <Palette className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -207,8 +207,8 @@ export default function Categories() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Plus className="w-5 h-5 text-blue-500" />
+              <div className="p-2 bg-info/10 rounded-lg">
+                <Plus className="w-5 h-5 text-info" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{prompts.length}</p>

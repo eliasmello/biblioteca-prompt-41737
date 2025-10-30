@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { Prompt } from '@/types/prompt';
-import { parsePromptContent } from '@/lib/prompt-parser';
+import * as promptService from '@/services/promptService';
 
+/**
+ * Hook for managing prompts with clean separation of concerns
+ */
 export const usePrompts = () => {
   const [publicPrompts, setPublicPrompts] = useState<Prompt[]>([]);
   const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
@@ -13,488 +15,218 @@ export const usePrompts = () => {
   const { toast } = useToast();
   const isFetchingRef = useRef(false);
 
-  const fetchPrompts = useCallback(async (personalOnly = false) => {
-    if (!user) return;
-    if (isFetchingRef.current) return;
+  const fetchPrompts = useCallback(
+    async (personalOnly = false) => {
+      if (!user || isFetchingRef.current) return;
 
-    isFetchingRef.current = true;
-    setLoading(true);
-    try {
-      // Buscar prompts sem a coluna pesada (preview_image) e montar tudo em memória
-      const pageSize = 100;
-      let from = 0;
+      isFetchingRef.current = true;
+      setLoading(true);
 
-      const seen = new Set<string>();
-      const all: Prompt[] = [];
-
-      while (true) {
-        let query = supabase
-          .from('prompts')
-          .select(`
-            id, title, category, subcategory, content, description, number,
-            tags, keywords, style_tags, subject_tags, created_by, updated_by,
-            is_favorite, usage_count, created_at, updated_at, is_public
-          `)
-          .order('created_at', { ascending: false })
-          .range(from, from + pageSize - 1);
+      try {
+        const prompts = await promptService.fetchPrompts({
+          personalOnly,
+          userId: user.id,
+        });
 
         if (personalOnly) {
-          // Para "Meus Prompts" - apenas prompts criados pelo usuário
-          query = query.eq('created_by', user.id);
+          setPersonalPrompts(prompts);
         } else {
-          // Para página "Prompts" - apenas prompts públicos do sistema
-          query = query.eq('is_public', true);
+          setPublicPrompts(prompts);
         }
-
-        const { data: rows, error } = await query;
-
-        if (error) {
-          toast({
-            title: "Erro ao carregar prompts",
-            description: error.message,
-            variant: "destructive"
-          });
-          break;
-        }
-
-        const batch = rows || [];
-        const mappedBatch: Prompt[] = batch.map((prompt: any) => ({
-          ...prompt,
-          styleTags: prompt.style_tags || [],
-          subjectTags: prompt.subject_tags || [],
-          createdBy: prompt.created_by,
-          updatedBy: prompt.updated_by,
-          isFavorite: prompt.is_favorite,
-          usageCount: prompt.usage_count,
-          createdAt: prompt.created_at,
-          updatedAt: prompt.updated_at,
-          previewImage: null
-        }));
-
-        for (const p of mappedBatch) {
-          if (!seen.has(p.id)) {
-            seen.add(p.id);
-            all.push(p);
-          }
-        }
-
-        if (batch.length < pageSize) break;
-        from += pageSize;
-      }
-
-      if (personalOnly) {
-        setPersonalPrompts(all);
-      } else {
-        setPublicPrompts(all);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar prompts:', err);
-      toast({
-        title: "Erro ao carregar prompts",
-        description: "Falha na conexão com o banco de dados",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-      isFetchingRef.current = false;
-    }
-  }, [user, toast]);
-
-  const createPrompt = useCallback(async (promptData: Partial<Prompt>, isPublic = false) => {
-    if (!user) return { error: 'User not authenticated' };
-
-    const parsed = parsePromptContent(promptData.content || '');
-    
-    const dbPrompt = {
-      title: promptData.title || 'Untitled',
-      category: parsed.category || promptData.category,
-      subcategory: parsed.subcategory || promptData.subcategory,
-      content: promptData.content || '',
-      description: promptData.description,
-      number: parsed.number || promptData.number,
-      tags: [...(parsed.extractedTags?.style || []), ...(parsed.extractedTags?.subject || [])],
-      keywords: [],
-      style_tags: parsed.extractedTags?.style || [],
-      subject_tags: parsed.extractedTags?.subject || [],
-      preview_image: promptData.previewImage,
-      created_by: user.id,
-      updated_by: user.id,
-      is_favorite: false,
-      usage_count: 0,
-      is_public: isPublic // Define se é prompt público (Master) ou privado (usuário normal)
-    };
-    
-    const { data, error } = await supabase
-      .from('prompts')
-      .insert([dbPrompt])
-      .select(`
-        id, title, category, subcategory, content, description, number,
-        tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, preview_image
-      `)
-      .single();
-
-    if (error) {
-      toast({
-        title: "Erro ao criar prompt",
-        description: error.message,
-        variant: "destructive"
-      });
-      return { error };
-    } else {
-      const mappedData = {
-        ...data,
-        styleTags: data.style_tags || [],
-        subjectTags: data.subject_tags || [],
-        createdBy: data.created_by,
-        updatedBy: data.updated_by,
-        isFavorite: data.is_favorite,
-        usageCount: data.usage_count,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-        previewImage: data.preview_image
-      };
-      
-      // Add to personal prompts if it's a private prompt, or public prompts if it's public
-      if (isPublic) {
-        setPublicPrompts(prev => [mappedData, ...prev]);
-      } else {
-        setPersonalPrompts(prev => [mappedData, ...prev]);
-      }
-      
-      toast({
-        title: "Prompt criado!",
-        description: "Prompt adicionado com sucesso."
-      });
-      return { data: mappedData };
-    }
-  }, [user, toast]);
-
-  const updatePrompt = useCallback(async (id: string, promptData: Partial<Prompt>, options?: { silent?: boolean }) => {
-    if (!user) return { error: 'User not authenticated' };
-
-    const dbUpdates: any = {};
-    
-    if (promptData.title !== undefined) dbUpdates.title = promptData.title;
-    if (promptData.category !== undefined) dbUpdates.category = promptData.category;
-    if (promptData.subcategory !== undefined) dbUpdates.subcategory = promptData.subcategory;
-    if (promptData.content !== undefined) dbUpdates.content = promptData.content;
-    if (promptData.description !== undefined) dbUpdates.description = promptData.description;
-    if (promptData.number !== undefined) dbUpdates.number = promptData.number;
-    if (promptData.isFavorite !== undefined) dbUpdates.is_favorite = promptData.isFavorite;
-    if (promptData.usageCount !== undefined) dbUpdates.usage_count = promptData.usageCount;
-    if (promptData.previewImage !== undefined) dbUpdates.preview_image = promptData.previewImage;
-    if (promptData.isPublic !== undefined) dbUpdates.is_public = promptData.isPublic;
-    
-    dbUpdates.updated_by = user.id;
-    
-    const { data, error } = await supabase
-      .from('prompts')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select(`
-        id, title, category, subcategory, content, description, number,
-        tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, preview_image, is_public
-      `)
-      .single();
-
-    if (error) {
-      toast({
-        title: "Erro ao atualizar prompt",
-        description: error.message,
-        variant: "destructive"
-      });
-      return { error };
-    } else {
-      const mappedData = {
-        ...data,
-        styleTags: data.style_tags || [],
-        subjectTags: data.subject_tags || [],
-        createdBy: data.created_by,
-        updatedBy: data.updated_by,
-        isFavorite: data.is_favorite,
-        usageCount: data.usage_count,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-        previewImage: data.preview_image,
-        isPublic: data.is_public
-      };
-      
-      // Update in both arrays if needed
-      setPublicPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
-      setPersonalPrompts(prev => prev.map(p => p.id === id ? mappedData : p));
-      
-      if (!options?.silent) {
+      } catch (error: any) {
         toast({
-          title: "Prompt atualizado!",
-          description: "Prompt modificado com sucesso."
+          title: 'Erro ao carregar prompts',
+          description: error.message,
+          variant: 'destructive',
         });
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
       }
-      return { data: mappedData };
-    }
-  }, [user, toast]);
+    },
+    [user, toast]
+  );
 
-  const deletePrompt = useCallback(async (id: string) => {
-    if (!user) return { error: 'User not authenticated' };
+  const createPrompt = useCallback(
+    async (promptData: promptService.CreatePromptData) => {
+      if (!user) return { error: 'User not authenticated' };
 
-    const { error } = await supabase
-      .from('prompts')
-      .delete()
-      .eq('id', id);
+      try {
+        const newPrompt = await promptService.createPrompt(promptData, user.id);
 
-    if (error) {
-      toast({
-        title: "Erro ao deletar prompt",
-        description: error.message,
-        variant: "destructive"
-      });
-      return { error };
-    } else {
-      // Remove from both arrays
-      setPublicPrompts(prev => prev.filter(p => p.id !== id));
-      setPersonalPrompts(prev => prev.filter(p => p.id !== id));
-      
-      toast({
-        title: "Prompt deletado!",
-        description: "Prompt removido com sucesso."
-      });
-      return { success: true };
-    }
-  }, [user, toast]);
-
-  const importPrompts = useCallback(async (content: string) => {
-    if (!user) return { error: 'User not authenticated' };
-
-    const promptsToImport: Partial<Prompt>[] = [];
-
-    const createPromptObject = (promptContent: string, index: number) => {
-      const parsed = parsePromptContent(promptContent);
-      return {
-        title: parsed.category 
-          ? `${parsed.category}${parsed.number ? ` #${parsed.number}` : ` #${index + 1}`}`
-          : `Prompt #${index + 1}`,
-        category: parsed.category || 'Geral',
-        subcategory: parsed.subcategory,
-        content: promptContent.trim(),
-        tags: [...(parsed.extractedTags?.style || []), ...(parsed.extractedTags?.subject || [])],
-        keywords: [],
-        styleTags: parsed.extractedTags?.style || [],
-        subjectTags: parsed.extractedTags?.subject || [],
-        number: parsed.number
-      };
-    };
-
-    const separationStrategies = [
-      {
-        name: 'numbered',
-        pattern: /(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm,
-        split: (content: string) => {
-          const parts = content.split(/(?:^|\n)(?:\d+\.?\s*(?:Prompt:?\s*)?)/gm);
-          return parts.filter(part => part.trim().length > 20);
+        if (promptData.isPublic) {
+          setPublicPrompts(prev => [newPrompt, ...prev]);
+        } else {
+          setPersonalPrompts(prev => [newPrompt, ...prev]);
         }
-      },
-      {
-        name: 'headers',
-        pattern: /(?:^|\n)#{1,6}\s+/gm,
-        split: (content: string) => {
-          const parts = content.split(/(?:^|\n)#{1,6}\s+/gm);
-          return parts.filter(part => part.trim().length > 20);
-        }
-      },
-      {
-        name: 'categories',
-        pattern: /\*\*\[.*?\]\*\*/gm,
-        split: (content: string) => {
-          const parts = content.split(/(?=\*\*\[.*?\]\*\*)/gm);
-          return parts.filter(part => part.trim().length > 20);
-        }
-      },
-      {
-        name: 'paragraphs',
-        pattern: /\n\s*\n/gm,
-        split: (content: string) => {
-          const parts = content.split(/\n\s*\n/gm);
-          return parts.filter(part => part.trim().length > 50);
-        }
-      },
-      {
-        name: 'keywords',
-        pattern: /(?:^|\n)(?:prompt|scene|description|image|photo|picture|design)[:.]?\s*/gmi,
-        split: (content: string) => {
-          const parts = content.split(/(?:^|\n)(?:prompt|scene|description|image|photo|picture|design)[:.]?\s*/gmi);
-          return parts.filter(part => part.trim().length > 20);
-        }
+
+        toast({
+          title: 'Prompt criado!',
+          description: 'Prompt adicionado com sucesso.',
+        });
+
+        return { data: newPrompt };
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao criar prompt',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return { error };
       }
-    ];
+    },
+    [user, toast]
+  );
 
-    let bestStrategy: any = null;
-    let maxPrompts = 0;
+  const updatePrompt = useCallback(
+    async (
+      id: string,
+      promptData: promptService.UpdatePromptData,
+      options?: { silent?: boolean }
+    ) => {
+      if (!user) return { error: 'User not authenticated' };
 
-    for (const strategy of separationStrategies) {
-      const parts = strategy.split(content);
-      if (parts.length > maxPrompts && parts.length > 1) {
-        maxPrompts = parts.length;
-        bestStrategy = strategy;
-      }
-    }
+      try {
+        const updated = await promptService.updatePrompt(id, promptData, user.id);
 
-    if (bestStrategy && maxPrompts > 1) {
-      console.log(`Using strategy: ${bestStrategy.name}, found ${maxPrompts} prompts`);
-      const parts = bestStrategy.split(content);
-      
-      parts.forEach((part: string, index: number) => {
-        if (part.trim().length > 20) {
-          promptsToImport.push(createPromptObject(part, index));
+        setPublicPrompts(prev => prev.map(p => (p.id === id ? updated : p)));
+        setPersonalPrompts(prev => prev.map(p => (p.id === id ? updated : p)));
+
+        if (!options?.silent) {
+          toast({
+            title: 'Prompt atualizado!',
+            description: 'Prompt modificado com sucesso.',
+          });
         }
-      });
-    } else {
-      console.log('No clear separation found, treating as single prompt');
-      promptsToImport.push(createPromptObject(content, 0));
-    }
 
-    const dbPrompts = promptsToImport.map(prompt => ({
-      title: prompt.title || 'Untitled',
-      category: prompt.category,
-      subcategory: prompt.subcategory,
-      content: prompt.content || '',
-      description: prompt.description,
-      number: prompt.number,
-      tags: prompt.tags || [],
-      keywords: prompt.keywords || [],
-      style_tags: prompt.styleTags || [],
-      subject_tags: prompt.subjectTags || [],
-      created_by: user.id,
-      updated_by: user.id,
-      is_favorite: false,
-      usage_count: 0,
-      is_public: false // Prompts importados são sempre privados por padrão
-    }));
+        return { data: updated };
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao atualizar prompt',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return { error };
+      }
+    },
+    [user, toast]
+  );
 
-    const { data, error } = await supabase
-      .from('prompts')
-      .insert(dbPrompts)
-      .select(`
-        id, title, category, subcategory, content, description, number,
-        tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, preview_image
-      `);
+  const deletePrompt = useCallback(
+    async (id: string) => {
+      if (!user) return { error: 'User not authenticated' };
 
-    if (error) {
-      toast({
-        title: "Erro ao importar prompts",
-        description: error.message,
-        variant: "destructive"
-      });
-      return { error };
-    }
-    
-    const mappedData = (data || []).map(d => ({
-      ...d,
-      styleTags: d.style_tags || [],
-      subjectTags: d.subject_tags || [],
-      createdBy: d.created_by,
-      updatedBy: d.updated_by,
-      isFavorite: d.is_favorite,
-      usageCount: d.usage_count,
-      createdAt: d.created_at,
-      updatedAt: d.updated_at,
-      previewImage: d.preview_image
-    }));
-    
-    // Add to personal prompts since imported prompts are private
-    setPersonalPrompts(prev => [...mappedData, ...prev]);
-    
-    toast({
-      title: "Prompts importados!",
-      description: `${data?.length || 0} prompts importados com sucesso.`
-    });
-    return { data: mappedData };
-  }, [user, toast, fetchPrompts]);
+      try {
+        await promptService.deletePrompt(id);
+
+        setPublicPrompts(prev => prev.filter(p => p.id !== id));
+        setPersonalPrompts(prev => prev.filter(p => p.id !== id));
+
+        toast({
+          title: 'Prompt deletado!',
+          description: 'Prompt removido com sucesso.',
+        });
+
+        return { success: true };
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao deletar prompt',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return { error };
+      }
+    },
+    [user, toast]
+  );
+
+  const importPrompts = useCallback(
+    async (content: string) => {
+      if (!user) return { error: 'User not authenticated' };
+
+      try {
+        const imported = await promptService.importPrompts(content, user.id);
+
+        setPersonalPrompts(prev => [...imported, ...prev]);
+
+        toast({
+          title: 'Prompts importados!',
+          description: `${imported.length} prompts importados com sucesso.`,
+        });
+
+        return { data: imported };
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao importar prompts',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return { error };
+      }
+    },
+    [user, toast]
+  );
 
   const fetchPreviewImage = useCallback(async (id: string) => {
     try {
-      const { data, error } = await supabase
-        .from('prompts')
-        .select('id, preview_image')
-        .eq('id', id)
-        .single();
+      const previewImage = await promptService.fetchPreviewImage(id);
 
-      if (!error && data) {
-        // Update in both arrays
-        setPublicPrompts(prev => prev.map(p => p.id === id ? { ...p, previewImage: data.preview_image || null } : p));
-        setPersonalPrompts(prev => prev.map(p => p.id === id ? { ...p, previewImage: data.preview_image || null } : p));
-      }
-    } catch (e) {
-      console.warn('Falha ao carregar preview_image:', e);
+      setPublicPrompts(prev =>
+        prev.map(p => (p.id === id ? { ...p, previewImage } : p))
+      );
+      setPersonalPrompts(prev =>
+        prev.map(p => (p.id === id ? { ...p, previewImage } : p))
+      );
+    } catch (error) {
+      console.warn('Falha ao carregar preview_image:', error);
     }
   }, []);
 
   const getPromptById = useCallback(async (id: string): Promise<Prompt | undefined> => {
     try {
-      const { data, error } = await supabase
-        .from('prompts')
-        .select(`
-          id, title, category, subcategory, content, description, number,
-          tags, keywords, style_tags, subject_tags, created_by, updated_by,
-          is_favorite, usage_count, created_at, updated_at, preview_image
-        `)
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return undefined;
-
-      const mapped: Prompt = {
-        id: data.id,
-        title: data.title,
-        category: data.category,
-        subcategory: data.subcategory || undefined,
-        content: data.content,
-        description: data.description || undefined,
-        number: data.number,
-        tags: data.tags || [],
-        keywords: data.keywords || [],
-        styleTags: data.style_tags || [],
-        subjectTags: data.subject_tags || [],
-        createdBy: data.created_by,
-        created_by: data.created_by,
-        updatedBy: data.updated_by,
-        isFavorite: data.is_favorite,
-        usageCount: data.usage_count,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-        previewImage: data.preview_image ?? null,
-      };
-      return mapped;
-    } catch (e) {
-      console.error('Erro ao buscar prompt por ID:', e);
+      const prompt = await promptService.getPromptById(id);
+      return prompt || undefined;
+    } catch (error) {
+      console.error('Erro ao buscar prompt por ID:', error);
       return undefined;
     }
   }, []);
 
+  // Fetch on mount
   useEffect(() => {
     if (user) {
-      // Buscar prompts pessoais (para Dashboard e "Meus Prompts")
-      fetchPrompts(true);
-      // Buscar prompts públicos (para Galeria Pública)
-      fetchPrompts(false);
+      fetchPrompts(true); // Personal prompts
+      fetchPrompts(false); // Public prompts
     }
   }, [user, fetchPrompts]);
 
-  const value = useMemo(() => ({
-    prompts: publicPrompts, // Default to public prompts for backward compatibility
-    personalPrompts,
-    publicPrompts,
-    loading,
-    createPrompt,
-    updatePrompt,
-    deletePrompt,
-    importPrompts,
-    refetch: fetchPrompts,
-    fetchPreviewImage,
-    getPromptById
-  }), [publicPrompts, personalPrompts, loading, createPrompt, updatePrompt, deletePrompt, importPrompts, fetchPrompts, fetchPreviewImage, getPromptById]);
+  const value = useMemo(
+    () => ({
+      prompts: publicPrompts,
+      personalPrompts,
+      publicPrompts,
+      loading,
+      createPrompt,
+      updatePrompt,
+      deletePrompt,
+      importPrompts,
+      refetch: fetchPrompts,
+      fetchPreviewImage,
+      getPromptById,
+    }),
+    [
+      publicPrompts,
+      personalPrompts,
+      loading,
+      createPrompt,
+      updatePrompt,
+      deletePrompt,
+      importPrompts,
+      fetchPrompts,
+      fetchPreviewImage,
+      getPromptById,
+    ]
+  );
 
   return value;
 };

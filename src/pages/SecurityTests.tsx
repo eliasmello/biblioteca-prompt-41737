@@ -37,13 +37,13 @@ export default function SecurityTests() {
   const getStatusIcon = (status: TestResult['status']) => {
     switch (status) {
       case 'passed':
-        return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+        return <CheckCircle2 className="h-5 w-5 text-success" />;
       case 'failed':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-destructive" />;
       case 'skipped':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-5 w-5 text-warning" />;
       default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
+        return <Clock className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -68,11 +68,11 @@ export default function SecurityTests() {
   const getOverallStatusColor = (status: TestReport['overallStatus']) => {
     switch (status) {
       case 'secure':
-        return 'bg-green-500/10 border-green-500/20';
+        return 'bg-success/10 border-success/20';
       case 'partial':
-        return 'bg-yellow-500/10 border-yellow-500/20';
+        return 'bg-warning/10 border-warning/20';
       case 'vulnerable':
-        return 'bg-red-500/10 border-red-500/20';
+        return 'bg-destructive/10 border-destructive/20';
     }
   };
 
@@ -139,15 +139,15 @@ export default function SecurityTests() {
                     <div className="text-sm text-muted-foreground">Total</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-500">{report.passed}</div>
+                    <div className="text-3xl font-bold text-success">{report.passed}</div>
                     <div className="text-sm text-muted-foreground">Passou</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-red-500">{report.failed}</div>
+                    <div className="text-3xl font-bold text-destructive">{report.failed}</div>
                     <div className="text-sm text-muted-foreground">Falhou</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-yellow-500">{report.skipped}</div>
+                    <div className="text-3xl font-bold text-warning">{report.skipped}</div>
                     <div className="text-sm text-muted-foreground">Pulado</div>
                   </div>
                   <div className="text-center">
@@ -169,8 +169,8 @@ export default function SecurityTests() {
                 )}
 
                 {report.overallStatus === 'secure' && (
-                  <Alert className="mt-4 bg-green-500/10 border-green-500/20">
-                    <AlertDescription className="text-green-700 dark:text-green-400">
+                  <Alert className="mt-4 bg-success/10 border-success/20">
+                    <AlertDescription className="text-success dark:text-success">
                       ✅ Parabéns! Todos os testes críticos de segurança foram aprovados.
                     </AlertDescription>
                   </Alert>
@@ -205,9 +205,9 @@ export default function SecurityTests() {
                         <div 
                           key={test.id} 
                           className={`p-4 border rounded-lg ${
-                            test.status === 'failed' ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900' :
-                            test.status === 'passed' ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900' :
-                            'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+                            test.status === 'failed' ? 'bg-destructive/10 border-destructive/20' :
+                            test.status === 'passed' ? 'bg-success/10 border-success/20' :
+                            'bg-muted/30 border-border'
                           }`}
                         >
                           <div className="flex items-start justify-between mb-2">
@@ -228,14 +228,14 @@ export default function SecurityTests() {
                             </div>
                             <div>
                               <span className="font-medium">Resultado:</span>
-                              <span className={`ml-2 ${test.status === 'failed' ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
+                              <span className={`ml-2 ${test.status === 'failed' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                                 {test.actualResult}
                               </span>
                             </div>
                             {test.error && (
-                              <div className="mt-2 p-2 bg-red-100 dark:bg-red-950/40 rounded border border-red-200 dark:border-red-900">
-                                <span className="font-medium text-red-700 dark:text-red-400">Detalhes:</span>
-                                <pre className="mt-1 text-xs text-red-600 dark:text-red-500 overflow-x-auto">
+                              <div className="mt-2 p-2 bg-destructive/10 rounded border border-destructive/20">
+                                <span className="font-medium text-destructive">Detalhes:</span>
+                                <pre className="mt-1 text-xs text-destructive/80 overflow-x-auto">
                                   {test.error}
                                 </pre>
                               </div>

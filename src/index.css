@@ -44,6 +44,10 @@
     --success-foreground: 0 0% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 98%;
+    --info: 200 80% 50%;
+    --info-foreground: 0 0% 98%;
+    --favorite: 45 93% 47%;
+    --favorite-foreground: 0 0% 98%;
 
     /* Border & Input */
     --border: 240 6% 90%;
@@ -128,6 +132,10 @@
     --success-foreground: 0 0% 98%;
     --warning: 38 85% 60%;
     --warning-foreground: 0 0% 98%;
+    --info: 200 85% 60%;
+    --info-foreground: 0 0% 98%;
+    --favorite: 45 100% 51%;
+    --favorite-foreground: 0 0% 98%;
 
     /* Border & Input */
     --border: 240 4% 15%;

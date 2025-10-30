@@ -95,7 +95,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
         {/* Favorite indicator */}
         {prompt.isFavorite && (
           <div className="absolute top-2 left-2 z-10">
-            <Star className="w-4 h-4 text-yellow-500 fill-current" />
+            <Star className="w-4 h-4 text-favorite fill-current" />
           </div>
         )}
 

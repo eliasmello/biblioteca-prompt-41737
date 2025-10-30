@@ -64,8 +64,8 @@ export default function Dashboard() {
       value: String(favoritesCount),
       change: "",
       icon: Star,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100"
+      color: "text-favorite",
+      bgColor: "bg-favorite/10"
     },
     {
       title: "Total de Usos",
@@ -141,7 +141,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold gradient-text">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here's what's happening with your prompts.
+            Bem-vindo! Veja o que está acontecendo com seus prompts.
           </p>
         </div>
         
@@ -191,7 +191,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-primary" />
-              Recent Prompts
+              Prompts Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -248,7 +248,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="w-5 h-5 text-accent" />
-              Top Categories
+              Principais Categorias
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -281,25 +281,25 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <Card className="glass">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Quick Actions
-          </CardTitle>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Ações Rápidas
+            </CardTitle>
+          </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/prompts/new')}>
               <Plus className="w-6 h-6" />
-              Create New Prompt
+              Criar Novo Prompt
             </Button>
             <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/categories')}>
               <FolderOpen className="w-6 h-6" />
-              Manage Categories
+              Gerenciar Categorias
             </Button>
             <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/prompts')}>
               <FileText className="w-6 h-6" />
-              Import Prompts
+              Importar Prompts
             </Button>
           </div>
         </CardContent>
