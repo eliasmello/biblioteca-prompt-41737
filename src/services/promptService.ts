@@ -30,6 +30,11 @@ export interface UpdatePromptData {
   isFavorite?: boolean;
   usageCount?: number;
   previewImage?: string | null;
+  isPublic?: boolean;
+  tags?: string[];
+  keywords?: string[];
+  styleTags?: string[];
+  subjectTags?: string[];
 }
 
 /**
@@ -163,6 +168,11 @@ export async function updatePrompt(
   if (data.isFavorite !== undefined) dbUpdates.is_favorite = data.isFavorite;
   if (data.usageCount !== undefined) dbUpdates.usage_count = data.usageCount;
   if (data.previewImage !== undefined) dbUpdates.preview_image = data.previewImage;
+  if (data.isPublic !== undefined) dbUpdates.is_public = data.isPublic;
+  if (data.tags !== undefined) dbUpdates.tags = data.tags;
+  if (data.keywords !== undefined) dbUpdates.keywords = data.keywords;
+  if (data.styleTags !== undefined) dbUpdates.style_tags = data.styleTags;
+  if (data.subjectTags !== undefined) dbUpdates.subject_tags = data.subjectTags;
 
   const { data: result, error } = await supabase
     .from('prompts')
