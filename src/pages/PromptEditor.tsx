@@ -13,11 +13,11 @@ export default function PromptEditor() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
-  const { createPrompt, updatePrompt, loading, getPromptById } = usePrompts();
+  const { createPrompt, updatePrompt, getPromptById } = usePrompts();
   
   const [prompt, setPrompt] = useState<Prompt | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFetchingPrompt, setIsFetchingPrompt] = useState(false);
+  const [isFetchingPrompt, setIsFetchingPrompt] = useState(!!id);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   const isEditing = Boolean(id);
@@ -80,41 +80,7 @@ export default function PromptEditor() {
     navigate('/prompts');
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        {/* Header skeleton */}
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-24" />
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-        </div>
-
-        {/* Form skeleton */}
-        <div className="w-full max-w-2xl mx-auto space-y-4">
-          <Skeleton className="h-7 w-40" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <div className="flex justify-end gap-2">
-            <Skeleton className="h-10 w-28" />
-            <Skeleton className="h-10 w-28" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Renderiza skeleton apenas enquanto busca o prompt específico
   if (isFetchingPrompt) {
     return (
       <div className="space-y-6">
@@ -127,7 +93,7 @@ export default function PromptEditor() {
           </div>
         </div>
 
-        {/* Form skeleton - reduzido para busca individual */}
+        {/* Form skeleton */}
         <div className="w-full max-w-2xl mx-auto space-y-4">
           <Skeleton className="h-7 w-40" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

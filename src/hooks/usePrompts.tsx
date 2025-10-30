@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { Prompt } from '@/types/prompt';
 import * as promptService from '@/services/promptService';
+import { useLoadingState } from './useLoadingState';
 
 /**
  * Hook for managing prompts with clean separation of concerns
@@ -10,41 +11,41 @@ import * as promptService from '@/services/promptService';
 export const usePrompts = () => {
   const [publicPrompts, setPublicPrompts] = useState<Prompt[]>([]);
   const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const isFetchingRef = useRef(false);
+  const { isLoading: loading, withLoading, isKeyLoading } = useLoadingState(true);
 
   const fetchPrompts = useCallback(
     async (personalOnly = false) => {
-      if (!user || isFetchingRef.current) return;
+      if (!user) return;
 
-      isFetchingRef.current = true;
-      setLoading(true);
+      const key = personalOnly ? 'fetch-personal' : 'fetch-public';
+      
+      // Evita múltiplas requisições simultâneas da mesma categoria
+      if (isKeyLoading(key)) return;
 
-      try {
-        const prompts = await promptService.fetchPrompts({
-          personalOnly,
-          userId: user.id,
-        });
+      await withLoading(async () => {
+        try {
+          const prompts = await promptService.fetchPrompts({
+            personalOnly,
+            userId: user.id,
+          });
 
-        if (personalOnly) {
-          setPersonalPrompts(prompts);
-        } else {
-          setPublicPrompts(prompts);
+          if (personalOnly) {
+            setPersonalPrompts(prompts);
+          } else {
+            setPublicPrompts(prompts);
+          }
+        } catch (error: any) {
+          toast({
+            title: 'Erro ao carregar prompts',
+            description: error.message,
+            variant: 'destructive',
+          });
         }
-      } catch (error: any) {
-        toast({
-          title: 'Erro ao carregar prompts',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-        isFetchingRef.current = false;
-      }
+      }, key);
     },
-    [user, toast]
+    [user, toast, withLoading, isKeyLoading]
   );
 
   const createPrompt = useCallback(
