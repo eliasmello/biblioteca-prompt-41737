@@ -13,7 +13,7 @@ export const usePrompts = () => {
   const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isLoading: loading, withLoading, isKeyLoading } = useLoadingState(true);
+  const { isLoading: loading, withLoading, isKeyLoading } = useLoadingState(false);
 
   const fetchPrompts = useCallback(
     async (personalOnly = false) => {
@@ -45,7 +45,7 @@ export const usePrompts = () => {
         }
       }, key);
     },
-    [user, toast, withLoading, isKeyLoading]
+    [user, toast]
   );
 
   const createPrompt = useCallback(
@@ -193,13 +193,6 @@ export const usePrompts = () => {
     }
   }, []);
 
-  // Fetch on mount
-  useEffect(() => {
-    if (user) {
-      fetchPrompts(true); // Personal prompts
-      fetchPrompts(false); // Public prompts
-    }
-  }, [user, fetchPrompts]);
 
   const value = useMemo(
     () => ({

@@ -96,7 +96,8 @@ export default function Prompts() {
       refetch(true);  // Fetch personal prompts
       refetch(false); // Fetch public prompts
     }
-  }, [user, refetch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Get unique categories from allPrompts (alphabetically sorted)
   const categories = [
