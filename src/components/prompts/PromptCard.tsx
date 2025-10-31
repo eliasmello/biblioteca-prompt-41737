@@ -38,16 +38,23 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
       <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-center md:items-start")}>
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
-          <LazyImage
-            src={prompt.thumbnail_url || prompt.thumbnailUrl || prompt.previewImage}
-            fullSrc={prompt.preview_image || prompt.previewImage}
-            alt={`Preview do prompt ${prompt.title}`}
-            className={cn(
-              variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
-              'rounded-lg'
-            )}
-            cached={true}
-          />
+          {(() => {
+            const thumbnailUrl = prompt.thumbnail_url || prompt.thumbnailUrl || prompt.previewImage;
+            const fullImageUrl = prompt.preview_image || prompt.previewImage;
+            
+            return (
+              <LazyImage
+                src={thumbnailUrl}
+                fullSrc={thumbnailUrl === fullImageUrl ? undefined : fullImageUrl}
+                alt={`Preview do prompt ${prompt.title}`}
+                className={cn(
+                  variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
+                  'rounded-lg'
+                )}
+                cached={true}
+              />
+            );
+          })()}
         </div>
 
         {/* Favorite indicator */}

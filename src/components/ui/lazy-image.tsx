@@ -68,12 +68,15 @@ export const LazyImage = ({
       setIsLoaded(true);
       onLoad?.();
 
-      // If we have a full source and loaded thumbnail, load full image
-      if (fullSrc && fullSrc !== src) {
+      // Only load fullSrc if it exists AND is different from src
+      if (fullSrc && fullSrc !== src && fullSrc !== imageSrc) {
         const fullImg = new Image();
         fullImg.src = fullSrc;
         fullImg.onload = () => {
           setCurrentSrc(fullSrc);
+        };
+        fullImg.onerror = () => {
+          console.warn('Failed to load full image, keeping thumbnail');
         };
       }
     };
