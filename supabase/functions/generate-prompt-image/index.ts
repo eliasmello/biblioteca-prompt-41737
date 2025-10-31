@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { createCanvas, loadImage } from "https://deno.land/x/canvas@v1.4.1/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,43 +17,6 @@ function base64ToBlob(base64: string, contentType = 'image/png'): Blob {
   return new Blob([byteArray], { type: contentType });
 }
 
-// Helper function to create real thumbnail with canvas
-async function createThumbnail(imageBlob: Blob): Promise<Blob> {
-  try {
-    console.log('Creating thumbnail with canvas - original size:', imageBlob.size, 'bytes');
-    
-    // Convert blob to array buffer
-    const arrayBuffer = await imageBlob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    // Load image with canvas
-    const img = await loadImage(uint8Array);
-    console.log(`Original image size: ${img.width()}x${img.height()}`);
-    
-    // Calculate new dimensions (max 300px width, maintain aspect ratio)
-    const maxWidth = 300;
-    const scale = maxWidth / img.width();
-    const newHeight = Math.floor(img.height() * scale);
-    
-    console.log(`Thumbnail dimensions: ${maxWidth}x${newHeight}`);
-    
-    // Create canvas and resize
-    const canvas = createCanvas(maxWidth, newHeight);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, maxWidth, newHeight);
-    
-    // Encode as JPEG with 70% quality
-    const thumbnailBuffer = canvas.toBuffer();
-    console.log(`Thumbnail compressed: ${thumbnailBuffer.length} bytes (~${Math.round(thumbnailBuffer.length / 1024)}KB)`);
-    
-    return new Blob([new Uint8Array(thumbnailBuffer)], { type: 'image/jpeg' });
-  } catch (error) {
-    console.error('Error creating thumbnail with canvas:', error);
-    // Fallback: create minimal placeholder
-    const placeholder = new Uint8Array(1024);
-    return new Blob([placeholder], { type: 'image/jpeg' });
-  }
-}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -157,14 +119,13 @@ serve(async (req) => {
 
     // Convert base64 to blob
     const imageBlob = base64ToBlob(generatedImageBase64)
-    const thumbnailBlob = await createThumbnail(imageBlob)
 
     // Generate unique filename
     const timestamp = Date.now()
     const randomId = crypto.randomUUID().split('-')[0]
     const filename = `${promptId || randomId}-${timestamp}`
 
-    // Upload full image to storage
+    // Upload image to storage (no separate thumbnail)
     const { data: imageData, error: imageError } = await supabase.storage
       .from('prompt-images')
       .upload(`${filename}.png`, imageBlob, {
@@ -177,37 +138,20 @@ serve(async (req) => {
       throw new Error('Failed to upload image to storage')
     }
 
-    // Upload thumbnail to storage
-    const { data: thumbnailData, error: thumbnailError } = await supabase.storage
-      .from('prompt-thumbnails')
-      .upload(`${filename}.jpg`, thumbnailBlob, {
-        contentType: 'image/jpeg',
-        upsert: true
-      })
-
-    if (thumbnailError) {
-      console.error('Error uploading thumbnail:', thumbnailError)
-      throw new Error('Failed to upload thumbnail to storage')
-    }
-
-    // Get public URLs
+    // Get public URL
     const { data: { publicUrl: imageUrl } } = supabase.storage
       .from('prompt-images')
       .getPublicUrl(imageData.path)
 
-    const { data: { publicUrl: thumbnailUrl } } = supabase.storage
-      .from('prompt-thumbnails')
-      .getPublicUrl(thumbnailData.path)
-
     console.log('Image uploaded successfully:', imageUrl)
-    console.log('Thumbnail uploaded successfully:', thumbnailUrl)
     
+    // Use same image for both thumbnail and full image
     return new Response(
       JSON.stringify({ 
         imageUrl,
-        thumbnailUrl,
+        thumbnailUrl: imageUrl,
         path: imageData.path,
-        thumbnailPath: thumbnailData.path
+        thumbnailPath: imageData.path
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
