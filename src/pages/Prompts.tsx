@@ -201,14 +201,27 @@ export default function Prompts() {
       const result = await generateImage(content, id);
       
       if (result) {
-        await updatePrompt(id, { 
+        // Update local state immediately for instant UI feedback
+        const updatedPrompt = {
           previewImage: result.imageUrl,
-          thumbnailUrl: result.thumbnailUrl 
-        });
+          thumbnailUrl: result.thumbnailUrl,
+          preview_image: result.imageUrl,
+          thumbnail_url: result.thumbnailUrl
+        };
+        
+        // Update state
+        await updatePrompt(id, updatedPrompt, { silent: true });
+        
         toast({
           title: "Imagem gerada! ✨",
           description: "A imagem foi gerada e atualizada com sucesso.",
         });
+        
+        // Refresh data from database to ensure sync
+        setTimeout(() => {
+          refetch(true);
+          refetch(false);
+        }, 500);
       }
     } catch (error) {
       console.error('Erro ao gerar imagem:', error);

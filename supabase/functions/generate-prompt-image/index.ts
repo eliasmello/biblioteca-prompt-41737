@@ -145,6 +145,26 @@ serve(async (req) => {
 
     console.log('Image uploaded successfully:', imageUrl)
     
+    // Update prompt in database if promptId provided
+    if (promptId) {
+      console.log('Updating prompt in database with image URLs...')
+      const { error: updateError } = await supabase
+        .from('prompts')
+        .update({
+          preview_image: imageUrl,
+          thumbnail_url: imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', promptId)
+      
+      if (updateError) {
+        console.error('Failed to update prompt in database:', updateError)
+        // Don't fail the whole operation, just log the error
+      } else {
+        console.log('Prompt updated successfully in database')
+      }
+    }
+    
     // Use same image for both thumbnail and full image
     return new Response(
       JSON.stringify({ 
