@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +8,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Star, Edit } from "lucide-react";
+import { Copy, Star, Edit, Loader2 } from "lucide-react";
 import { cn, toTitleCase } from "@/lib/utils";
+import { getPromptById } from "@/services/promptService";
+import { Prompt } from "@/types/prompt";
 
 interface PromptPreviewModalProps {
   isOpen: boolean;
@@ -41,16 +44,54 @@ export function PromptPreviewModal({
   onEdit,
   onDelete,
 }: PromptPreviewModalProps) {
+  const [fullPrompt, setFullPrompt] = useState<Prompt | null>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+
+  // Lazy-load conteúdo completo se não estiver disponível
+  useEffect(() => {
+    if (!prompt || !isOpen) {
+      setFullPrompt(null);
+      return;
+    }
+
+    // Se já tem content, usa o prompt direto
+    if (prompt.content && prompt.content.trim()) {
+      setFullPrompt(prompt as Prompt);
+      return;
+    }
+
+    // Caso contrário, busca dados completos
+    const loadFullContent = async () => {
+      setIsLoadingContent(true);
+      try {
+        const full = await getPromptById(prompt.id);
+        if (full) {
+          setFullPrompt(full);
+        } else {
+          setFullPrompt(prompt as Prompt);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar conteúdo completo:', error);
+        setFullPrompt(prompt as Prompt);
+      } finally {
+        setIsLoadingContent(false);
+      }
+    };
+
+    loadFullContent();
+  }, [prompt, isOpen]);
+
   if (!prompt) return null;
 
+  const displayPrompt = fullPrompt || (prompt as Prompt);
+
   const cleanPromptContent = (content: string) => {
-    // Remove prompt number and "prompt:" prefix
+    if (!content) return '';
     return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(cleanPromptContent(prompt.content));
-    // You could add a toast notification here
+    navigator.clipboard.writeText(cleanPromptContent(displayPrompt.content));
   };
 
   return (
@@ -122,16 +163,23 @@ export function PromptPreviewModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-foreground">Prompt Content</h3>
-              <Button onClick={handleCopy} size="sm" variant="outline">
+              <Button onClick={handleCopy} size="sm" variant="outline" disabled={isLoadingContent}>
                 <Copy className="w-4 h-4 mr-2" />
                 Copy to Clipboard
               </Button>
             </div>
             
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 font-mono text-sm">
-              <div className="prompt-highlight whitespace-pre-wrap">
-                {cleanPromptContent(prompt.content)}
-              </div>
+              {isLoadingContent ? (
+                <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Carregando conteúdo...</span>
+                </div>
+              ) : (
+                <div className="prompt-highlight whitespace-pre-wrap">
+                  {cleanPromptContent(displayPrompt.content)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -142,11 +190,11 @@ export function PromptPreviewModal({
             <h3 className="font-semibold text-foreground">Tags & Metadata</h3>
             
             <div className="grid gap-4">
-              {prompt.styleTags.length > 0 && (
+              {displayPrompt.styleTags?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Style Tags</h4>
                   <div className="flex flex-wrap gap-1">
-                    {prompt.styleTags.map((tag) => (
+                    {displayPrompt.styleTags.map((tag) => (
                       <Badge key={tag} variant="outline" className="bg-primary-muted text-primary">
                         {toTitleCase(tag)}
                       </Badge>
@@ -155,11 +203,11 @@ export function PromptPreviewModal({
                 </div>
               )}
 
-              {prompt.subjectTags.length > 0 && (
+              {displayPrompt.subjectTags?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Subject Tags</h4>
                   <div className="flex flex-wrap gap-1">
-                    {prompt.subjectTags.map((tag) => (
+                    {displayPrompt.subjectTags.map((tag) => (
                       <Badge key={tag} variant="outline" className="bg-accent-muted text-accent">
                         {toTitleCase(tag)}
                       </Badge>
@@ -168,11 +216,11 @@ export function PromptPreviewModal({
                 </div>
               )}
 
-              {prompt.tags.length > 0 && (
+              {displayPrompt.tags?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">General Tags</h4>
                   <div className="flex flex-wrap gap-1">
-                    {prompt.tags.map((tag) => (
+                    {displayPrompt.tags.map((tag) => (
                       <Badge key={tag} variant="secondary">
                         {toTitleCase(tag)}
                       </Badge>
@@ -193,7 +241,7 @@ export function PromptPreviewModal({
             </div>
             <div className="space-y-1">
               <p className="text-2xl font-bold text-accent">
-                {prompt.content.split(' ').length}
+                {displayPrompt.content ? displayPrompt.content.split(' ').length : 0}
               </p>
               <p className="text-sm text-muted-foreground">Words</p>
             </div>

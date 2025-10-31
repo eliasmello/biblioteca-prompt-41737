@@ -1,8 +1,24 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Prompt } from '@/types/prompt';
 import { parsePromptContent } from '@/lib/prompt-parser';
+import { logger } from '@/lib/logger';
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 50;
+
+// Colunas para listagem (sem content e arrays grandes)
+const SELECT_SUMMARY = `
+  id, title, category, subcategory, description, number,
+  created_by, updated_by, is_favorite, usage_count,
+  created_at, updated_at, is_public, preview_image, thumbnail_url
+`;
+
+// Colunas completas para detalhes
+const SELECT_FULL = `
+  id, title, category, subcategory, content, description, number,
+  tags, keywords, style_tags, subject_tags, created_by, updated_by,
+  is_favorite, usage_count, created_at, updated_at, is_public,
+  preview_image, thumbnail_url
+`;
 
 export interface FetchPromptsOptions {
   personalOnly?: boolean;
@@ -44,6 +60,10 @@ export interface UpdatePromptData {
 export function mapDbPromptToPrompt(dbPrompt: any): Prompt {
   return {
     ...dbPrompt,
+    // Garantir que campos opcionais nunca sejam undefined
+    content: dbPrompt.content || '',
+    tags: dbPrompt.tags || [],
+    keywords: dbPrompt.keywords || [],
     styleTags: dbPrompt.style_tags || [],
     subjectTags: dbPrompt.subject_tags || [],
     createdBy: dbPrompt.created_by,
@@ -58,7 +78,7 @@ export function mapDbPromptToPrompt(dbPrompt: any): Prompt {
 }
 
 /**
- * Fetches prompts from the database with pagination
+ * Fetches prompts from the database with pagination and retry logic
  */
 export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<Prompt[]> {
   const { personalOnly = false, userId } = options;
@@ -67,47 +87,129 @@ export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<P
     throw new Error('User ID is required to fetch prompts');
   }
 
+  const startTime = performance.now();
   const allPrompts: Prompt[] = [];
   const seen = new Set<string>();
-  let from = 0;
+  let pageSize = PAGE_SIZE;
+  let retryCount = 0;
 
-  while (true) {
-    let query = supabase
-      .from('prompts')
-      .select(`
-        id, title, category, subcategory, content, description, number,
-        tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, is_public,
-        preview_image, thumbnail_url
-      `)
-      .order('created_at', { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
+  // Primeira tentativa: buscar total para decidir estratégia
+  let query = supabase
+    .from('prompts')
+    .select('id', { count: 'exact', head: true });
 
-    if (personalOnly) {
-      query = query.eq('created_by', userId);
-    } else {
-      query = query.eq('is_public', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-
-    const mapped = data.map(mapDbPromptToPrompt);
-    
-    for (const prompt of mapped) {
-      if (!seen.has(prompt.id)) {
-        seen.add(prompt.id);
-        allPrompts.push(prompt);
-      }
-    }
-
-    if (data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
+  if (personalOnly) {
+    query = query.eq('created_by', userId);
+  } else {
+    query = query.eq('is_public', true);
   }
 
+  const { count } = await query;
+  const totalCount = count || 0;
+
+  logger.debug(`fetchPrompts(${personalOnly ? 'personal' : 'public'}): total=${totalCount}`);
+
+  // Se total <= PAGE_SIZE, buscar tudo de uma vez
+  if (totalCount <= PAGE_SIZE) {
+    try {
+      let singleQuery = supabase
+        .from('prompts')
+        .select(SELECT_SUMMARY)
+        .order('created_at', { ascending: false });
+
+      if (personalOnly) {
+        singleQuery = singleQuery.eq('created_by', userId);
+      } else {
+        singleQuery = singleQuery.eq('is_public', true);
+      }
+
+      const { data, error } = await singleQuery;
+
+      if (error) {
+        if (isTimeoutError(error)) {
+          logger.warn('Timeout na busca única, tentando com lote menor');
+          pageSize = Math.floor(PAGE_SIZE / 2);
+        } else {
+          throw error;
+        }
+      } else {
+        const duration = performance.now() - startTime;
+        logger.debug(`fetchPrompts completou em ${duration.toFixed(0)}ms`);
+        return (data || []).map(mapDbPromptToPrompt);
+      }
+    } catch (err) {
+      logger.error('Erro na busca única:', err);
+      pageSize = Math.floor(PAGE_SIZE / 2);
+    }
+  }
+
+  // Paginação com retry
+  let from = 0;
+  while (true) {
+    try {
+      let paginatedQuery = supabase
+        .from('prompts')
+        .select(SELECT_SUMMARY)
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (personalOnly) {
+        paginatedQuery = paginatedQuery.eq('created_by', userId);
+      } else {
+        paginatedQuery = paginatedQuery.eq('is_public', true);
+      }
+
+      const { data, error } = await paginatedQuery;
+
+      if (error) {
+        if (isTimeoutError(error) && retryCount < 1) {
+          retryCount++;
+          pageSize = Math.floor(pageSize / 2);
+          logger.warn(`Timeout detectado, reduzindo pageSize para ${pageSize}`);
+          continue;
+        }
+        throw error;
+      }
+
+      if (!data || data.length === 0) break;
+
+      const mapped = data.map(mapDbPromptToPrompt);
+      
+      for (const prompt of mapped) {
+        if (!seen.has(prompt.id)) {
+          seen.add(prompt.id);
+          allPrompts.push(prompt);
+        }
+      }
+
+      if (data.length < pageSize) break;
+      from += pageSize;
+    } catch (err: any) {
+      if (isTimeoutError(err) && retryCount < 1) {
+        retryCount++;
+        pageSize = Math.floor(pageSize / 2);
+        logger.warn(`Erro de timeout, tentando novamente com pageSize=${pageSize}`);
+        continue;
+      }
+      throw new Error('A busca levou mais tempo que o esperado. Tentamos novamente com um lote menor, mas não foi possível completar.');
+    }
+  }
+
+  const duration = performance.now() - startTime;
+  logger.debug(`fetchPrompts completou em ${duration.toFixed(0)}ms com ${allPrompts.length} prompts`);
+
   return allPrompts;
+}
+
+/**
+ * Verifica se é um erro de timeout do Postgres
+ */
+function isTimeoutError(error: any): boolean {
+  return (
+    error?.code === '57014' ||
+    error?.message?.toLowerCase().includes('statement timeout') ||
+    error?.message?.toLowerCase().includes('canceling statement')
+  );
 }
 
 /**
@@ -141,11 +243,7 @@ export async function createPrompt(
   const { data: result, error } = await supabase
     .from('prompts')
     .insert([dbPrompt])
-    .select(`
-      id, title, category, subcategory, content, description, number,
-      tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
-    `)
+    .select(SELECT_FULL)
     .single();
 
   if (error) throw error;
@@ -182,11 +280,7 @@ export async function updatePrompt(
     .from('prompts')
     .update(dbUpdates)
     .eq('id', id)
-    .select(`
-      id, title, category, subcategory, content, description, number,
-      tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
-    `)
+    .select(SELECT_FULL)
     .single();
 
   if (error) throw error;
@@ -206,16 +300,12 @@ export async function deletePrompt(id: string): Promise<void> {
 }
 
 /**
- * Fetches a single prompt by ID
+ * Fetches a single prompt by ID (com dados completos)
  */
 export async function getPromptById(id: string): Promise<Prompt | null> {
   const { data, error } = await supabase
     .from('prompts')
-    .select(`
-      id, title, category, subcategory, content, description, number,
-      tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
-    `)
+    .select(SELECT_FULL)
     .eq('id', id)
     .maybeSingle();
 
@@ -269,11 +359,7 @@ export async function importPrompts(
   const { data, error } = await supabase
     .from('prompts')
     .insert(dbPrompts)
-    .select(`
-      id, title, category, subcategory, content, description, number,
-      tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
-    `);
+    .select(SELECT_FULL);
 
   if (error) throw error;
   return (data || []).map(mapDbPromptToPrompt);

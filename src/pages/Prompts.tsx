@@ -116,11 +116,13 @@ export default function Prompts() {
     description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
   });
 
-  // Fetch all prompts (personal + public)
+  // Fetch all prompts (personal + public) sequencialmente para evitar concorrência
   useEffect(() => {
     if (user) {
-      refetch(true);  // Fetch personal prompts
-      refetch(false); // Fetch public prompts
+      (async () => {
+        await refetch(true);  // Fetch personal prompts primeiro
+        await refetch(false); // Fetch public prompts depois
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
