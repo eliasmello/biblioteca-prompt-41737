@@ -30,6 +30,7 @@ export interface UpdatePromptData {
   isFavorite?: boolean;
   usageCount?: number;
   previewImage?: string | null;
+  thumbnailUrl?: string | null;
   isPublic?: boolean;
   tags?: string[];
   keywords?: string[];

@@ -248,10 +248,10 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                           });
                           return;
                         }
-                        const editedImage = await editImage(content, previewImage);
-                        if (editedImage) {
-                          setPreviewImage(editedImage);
-                          form.setValue('previewImage', editedImage, { shouldDirty: true });
+                        const result = await editImage(content, previewImage, prompt?.id);
+                        if (result) {
+                          setPreviewImage(result.imageUrl);
+                          form.setValue('previewImage', result.imageUrl);
                           toast({
                             title: 'Imagem editada!',
                             description: 'A imagem foi editada com sucesso.',
@@ -309,10 +309,10 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
                           });
                           return;
                         }
-                        const generatedImage = await generateImage(content);
-                        if (generatedImage) {
-                          setPreviewImage(generatedImage);
-                          form.setValue('previewImage', generatedImage, { shouldDirty: true });
+                        const result = await generateImage(content, prompt?.id);
+                        if (result) {
+                          setPreviewImage(result.imageUrl);
+                          form.setValue('previewImage', result.imageUrl);
                           toast({
                             title: 'Imagem gerada!',
                             description: 'A imagem foi gerada com sucesso pela IA.',

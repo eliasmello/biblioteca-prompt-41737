@@ -1,8 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Helper function to convert base64 to blob
+function base64ToBlob(base64: string, contentType = 'image/png'): Blob {
+  const byteCharacters = atob(base64.split(',')[1] || base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: contentType });
+}
+
+// Helper function to create thumbnail (simplified - uses canvas in production)
+async function createThumbnail(imageBlob: Blob): Promise<Blob> {
+  // For now, just return the original blob
+  // In a real implementation, you'd resize the image
+  return imageBlob;
 }
 
 serve(async (req) => {
@@ -12,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, action = 'generate', imageUrl } = await req.json()
+    const { prompt, action = 'generate', imageUrl: inputImageUrl, promptId } = await req.json()
 
     if (!prompt) {
       return new Response(
@@ -26,10 +45,19 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured')
     }
 
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Supabase configuration is missing')
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
     // Build the message content based on action
     let messageContent: any;
     
-    if (action === 'edit' && imageUrl) {
+    if (action === 'edit' && inputImageUrl) {
       // Edit existing image
       messageContent = [
         {
@@ -39,7 +67,7 @@ serve(async (req) => {
         {
           type: "image_url",
           image_url: {
-            url: imageUrl
+            url: inputImageUrl
           }
         }
       ];
@@ -87,16 +115,68 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
+    const generatedImageBase64 = data.choices?.[0]?.message?.images?.[0]?.image_url?.url
 
-    if (!generatedImageUrl) {
+    if (!generatedImageBase64) {
       throw new Error('No image generated')
     }
 
     console.log(`Image ${action === 'edit' ? 'edited' : 'generated'} successfully`)
+
+    // Convert base64 to blob
+    const imageBlob = base64ToBlob(generatedImageBase64)
+    const thumbnailBlob = await createThumbnail(imageBlob)
+
+    // Generate unique filename
+    const timestamp = Date.now()
+    const randomId = crypto.randomUUID().split('-')[0]
+    const filename = `${promptId || randomId}-${timestamp}`
+
+    // Upload full image to storage
+    const { data: imageData, error: imageError } = await supabase.storage
+      .from('prompt-images')
+      .upload(`${filename}.png`, imageBlob, {
+        contentType: 'image/png',
+        upsert: true
+      })
+
+    if (imageError) {
+      console.error('Error uploading image:', imageError)
+      throw new Error('Failed to upload image to storage')
+    }
+
+    // Upload thumbnail to storage
+    const { data: thumbnailData, error: thumbnailError } = await supabase.storage
+      .from('prompt-thumbnails')
+      .upload(`${filename}.png`, thumbnailBlob, {
+        contentType: 'image/png',
+        upsert: true
+      })
+
+    if (thumbnailError) {
+      console.error('Error uploading thumbnail:', thumbnailError)
+      throw new Error('Failed to upload thumbnail to storage')
+    }
+
+    // Get public URLs
+    const { data: { publicUrl: imageUrl } } = supabase.storage
+      .from('prompt-images')
+      .getPublicUrl(imageData.path)
+
+    const { data: { publicUrl: thumbnailUrl } } = supabase.storage
+      .from('prompt-thumbnails')
+      .getPublicUrl(thumbnailData.path)
+
+    console.log('Image uploaded successfully:', imageUrl)
+    console.log('Thumbnail uploaded successfully:', thumbnailUrl)
     
     return new Response(
-      JSON.stringify({ imageUrl: generatedImageUrl }),
+      JSON.stringify({ 
+        imageUrl,
+        thumbnailUrl,
+        path: imageData.path,
+        thumbnailPath: thumbnailData.path
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

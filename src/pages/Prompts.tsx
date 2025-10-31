@@ -198,10 +198,13 @@ export default function Prompts() {
 
     setGeneratingImageId(id);
     try {
-      const imageUrl = await generateImage(content);
+      const result = await generateImage(content, id);
       
-      if (imageUrl) {
-        await updatePrompt(id, { previewImage: imageUrl });
+      if (result) {
+        await updatePrompt(id, { 
+          previewImage: result.imageUrl,
+          thumbnailUrl: result.thumbnailUrl 
+        });
         toast({
           title: "Imagem gerada! ✨",
           description: "A imagem foi gerada e atualizada com sucesso.",

@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Copy, Calendar, Eye, Edit, Trash2, ImageIcon, Sparkles } from "lucide-react";
 import { cn, toTitleCase } from "@/lib/utils";
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, memo } from "react";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 interface PromptCardProps {
   prompt: any;
@@ -19,25 +20,10 @@ interface PromptCardProps {
 }
 
 function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEdit, onDelete, onGenerateImage, isGeneratingImage, loadPreview, variant = 'grid' }: PromptCardProps) {
-  const [previewImage, setPreviewImage] = useState<string | null>(prompt.previewImage || null);
-  const [requestedImage, setRequestedImage] = useState(false);
-
   const cleanPromptContent = (content: string) => {
     // Remove prompt number and "prompt:" prefix
     return content.replace(/^#?\s*prompt\s*#?\d*:?\s*/i, '').trim();
   };
-
-  useEffect(() => {
-    setPreviewImage(prompt.previewImage || null);
-  }, [prompt.previewImage]);
-
-  // Busca a imagem de preview imediatamente ao montar
-  useEffect(() => {
-    if (!previewImage && !requestedImage) {
-      loadPreview(prompt.id);
-      setRequestedImage(true);
-    }
-  }, [previewImage, requestedImage, loadPreview, prompt.id]);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,30 +38,16 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
       <CardContent className={cn("p-6", variant === 'list' && "flex gap-4 sm:gap-6 items-center md:items-start")}>
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
-          <div 
+          <LazyImage
+            src={prompt.thumbnail_url || prompt.thumbnailUrl || prompt.previewImage}
+            fullSrc={prompt.preview_image || prompt.previewImage}
+            alt={`Preview do prompt ${prompt.title}`}
             className={cn(
               variant === 'list' ? 'h-20 sm:h-24 md:h-28 w-full' : 'aspect-video',
-              'bg-muted rounded-lg overflow-hidden border border-border/50'
+              'rounded-lg'
             )}
-          >
-            {previewImage ? (
-              <img 
-                src={previewImage} 
-                alt={`Preview do prompt ${prompt.title}`} 
-                className="w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-                fetchPriority="low"
-                width={112}
-                height={80}
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                <ImageIcon className="w-8 h-8 mb-2" />
-                <span className="text-xs">Sem imagem</span>
-              </div>
-            )}
-          </div>
+            cached={true}
+          />
         </div>
 
         {/* Favorite indicator */}
@@ -134,7 +106,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                   e.stopPropagation();
                   onEdit(prompt.id, {
                     content: cleanPromptContent(prompt.content),
-                    previewImage: previewImage
+                    previewImage: prompt.previewImage || null
                   });
                 }}
                 className="w-8 h-8 p-0"
@@ -230,7 +202,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                         e.stopPropagation();
                         onEdit(prompt.id, {
                           content: cleanPromptContent(prompt.content),
-                          previewImage: previewImage
+                          previewImage: prompt.previewImage || null
                         });
                       }}
                       className="w-8 h-8 p-0"

@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface ImageResult {
+  imageUrl: string;
+  thumbnailUrl: string;
+  path: string;
+  thumbnailPath: string;
+}
+
 interface UseImageGenerationReturn {
-  generateImage: (prompt: string) => Promise<string | null>;
-  editImage: (prompt: string, imageUrl: string) => Promise<string | null>;
+  generateImage: (prompt: string, promptId?: string) => Promise<ImageResult | null>;
+  editImage: (prompt: string, imageUrl: string, promptId?: string) => Promise<ImageResult | null>;
   isLoading: boolean;
   error: string | null;
 }
@@ -14,13 +21,13 @@ export function useImageGeneration(): UseImageGenerationReturn {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const generateImage = async (prompt: string): Promise<string | null> => {
+  const generateImage = async (prompt: string, promptId?: string): Promise<ImageResult | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
       const { data, error: functionError } = await supabase.functions.invoke('generate-prompt-image', {
-        body: { prompt, action: 'generate' }
+        body: { prompt, action: 'generate', promptId }
       });
 
       if (functionError) {
@@ -75,11 +82,21 @@ export function useImageGeneration(): UseImageGenerationReturn {
         return null;
       }
 
-      if (data?.imageUrl) {
-        return data.imageUrl as string;
+      if (!data?.imageUrl || !data?.thumbnailUrl) {
+        throw new Error('Nenhuma imagem foi gerada');
       }
 
-      return null;
+      toast({
+        title: "Imagem gerada com sucesso!",
+        description: "A imagem de preview foi criada.",
+      });
+
+      return {
+        imageUrl: data.imageUrl,
+        thumbnailUrl: data.thumbnailUrl,
+        path: data.path,
+        thumbnailPath: data.thumbnailPath
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
       console.error('Image generation error:', errorMessage);
@@ -95,13 +112,13 @@ export function useImageGeneration(): UseImageGenerationReturn {
     }
   };
 
-  const editImage = async (prompt: string, imageUrl: string): Promise<string | null> => {
+  const editImage = async (prompt: string, imageUrl: string, promptId?: string): Promise<ImageResult | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
       const { data, error: functionError } = await supabase.functions.invoke('generate-prompt-image', {
-        body: { prompt, action: 'edit', imageUrl }
+        body: { prompt, action: 'edit', imageUrl, promptId }
       });
 
       if (functionError) {
@@ -156,11 +173,21 @@ export function useImageGeneration(): UseImageGenerationReturn {
         return null;
       }
 
-      if (data?.imageUrl) {
-        return data.imageUrl as string;
+      if (!data?.imageUrl || !data?.thumbnailUrl) {
+        throw new Error('Nenhuma imagem foi gerada');
       }
 
-      return null;
+      toast({
+        title: "Imagem editada com sucesso!",
+        description: "A nova imagem de preview foi criada.",
+      });
+
+      return {
+        imageUrl: data.imageUrl,
+        thumbnailUrl: data.thumbnailUrl,
+        path: data.path,
+        thumbnailPath: data.thumbnailPath
+      };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to edit image';
       console.error('Image editing error:', errorMessage);
