@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { createCanvas, loadImage } from "https://deno.land/x/canvas@v1.4.1/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,30 +18,40 @@ function base64ToBlob(base64: string, contentType = 'image/png'): Blob {
   return new Blob([byteArray], { type: contentType });
 }
 
-// Helper function to create a smaller base64 thumbnail
+// Helper function to create real thumbnail with canvas
 async function createThumbnail(imageBlob: Blob): Promise<Blob> {
   try {
-    console.log('Creating thumbnail - original size:', imageBlob.size, 'bytes');
+    console.log('Creating thumbnail with canvas - original size:', imageBlob.size, 'bytes');
     
-    // Convert blob to base64
+    // Convert blob to array buffer
     const arrayBuffer = await imageBlob.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    const base64 = btoa(String.fromCharCode(...bytes));
+    const uint8Array = new Uint8Array(arrayBuffer);
     
-    // Simple solution: Store only a portion of the base64 for thumbnail
-    // Take first 100KB worth of base64 data (approximately)
-    const maxBase64Length = 100000; // ~75KB when decoded
-    const thumbnailBase64 = base64.substring(0, Math.min(base64.length, maxBase64Length));
+    // Load image with canvas
+    const img = await loadImage(uint8Array);
+    console.log(`Original image size: ${img.width()}x${img.height()}`);
     
-    console.log(`Thumbnail created: ${thumbnailBase64.length} base64 chars`);
+    // Calculate new dimensions (max 300px width, maintain aspect ratio)
+    const maxWidth = 300;
+    const scale = maxWidth / img.width();
+    const newHeight = Math.floor(img.height() * scale);
     
-    // Convert back to blob
-    const thumbnailBytes = Uint8Array.from(atob(thumbnailBase64), c => c.charCodeAt(0));
-    return new Blob([thumbnailBytes], { type: 'image/jpeg' });
+    console.log(`Thumbnail dimensions: ${maxWidth}x${newHeight}`);
+    
+    // Create canvas and resize
+    const canvas = createCanvas(maxWidth, newHeight);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, maxWidth, newHeight);
+    
+    // Encode as JPEG with 70% quality
+    const thumbnailBuffer = canvas.toBuffer();
+    console.log(`Thumbnail compressed: ${thumbnailBuffer.length} bytes (~${Math.round(thumbnailBuffer.length / 1024)}KB)`);
+    
+    return new Blob([new Uint8Array(thumbnailBuffer)], { type: 'image/jpeg' });
   } catch (error) {
-    console.error('Error creating thumbnail:', error);
+    console.error('Error creating thumbnail with canvas:', error);
     // Fallback: create minimal placeholder
-    const placeholder = new Uint8Array(1024); // 1KB placeholder
+    const placeholder = new Uint8Array(1024);
     return new Blob([placeholder], { type: 'image/jpeg' });
   }
 }
