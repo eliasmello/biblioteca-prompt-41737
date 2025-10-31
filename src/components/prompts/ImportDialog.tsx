@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Upload, FileText, FileSpreadsheet, File, FileJson } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
+import { importArraySchema } from '@/lib/validation-schemas';
 
 interface ImportDialogProps {
   onImport: (content: string) => void;
@@ -74,6 +76,15 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
             reject(new Error('O arquivo JSON não contém prompts'));
             return;
           }
+
+          // Validate JSON structure with Zod
+          try {
+            importArraySchema.parse(json);
+          } catch (validationError: any) {
+            const errorMessage = validationError.errors?.[0]?.message || 'Dados JSON inválidos';
+            reject(new Error(errorMessage));
+            return;
+          }
           
           // Converter cada prompt para texto formatado
           const promptsText = json.map((prompt: any, index: number) => {
@@ -84,8 +95,8 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
           }).join('\n\n---\n\n');
           
           resolve(promptsText);
-        } catch (error) {
-          reject(new Error('Erro ao processar arquivo JSON: ' + (error instanceof Error ? error.message : 'formato inválido')));
+        } catch (error: any) {
+          reject(new Error(error.message || 'Erro ao processar arquivo JSON'));
         }
       };
       reader.onerror = reject;
@@ -216,8 +227,8 @@ export default function ImportDialog({ onImport, isImporting, children }: Import
         title: "Sucesso!",
         description: `Arquivo ${file.name} processado com sucesso.`,
       });
-    } catch (error) {
-      console.error('Erro ao processar arquivo:', error);
+    } catch (error: any) {
+      logger.error('Erro ao processar arquivo:', error);
       toast({
         title: "Erro",
         description: `Erro ao processar arquivo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,

@@ -10,6 +10,8 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Eye, EyeOff } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/lib/logger";
+import { passwordSchema } from "@/lib/validation-schemas";
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
@@ -52,18 +54,16 @@ export default function AcceptInvite() {
 
   const validateInvite = async () => {
     try {
-      // Usar função segura de validação ao invés de query direta
       const { data, error } = await supabase
         .rpc('validate_invitation_token', { _token: token });
 
       if (error) {
-        console.error('AcceptInvite: Validation error:', error);
+        logger.error('AcceptInvite: Validation error:', error);
         toast.error("Erro ao verificar convite");
         navigate('/auth');
         return;
       }
 
-      // A função retorna um array, pegar o primeiro resultado
       const validInvitation = Array.isArray(data) ? data[0] : data;
 
       if (!validInvitation || !validInvitation.is_valid) {
@@ -72,9 +72,9 @@ export default function AcceptInvite() {
         return;
       }
 
-      setInvitation({ ...validInvitation, token }); // Manter token para uso posterior
+      setInvitation({ ...validInvitation, token });
     } catch (error) {
-      console.error('AcceptInvite: Validation error:', error);
+      logger.error('AcceptInvite: Validation error:', error);
       toast.error("Erro ao validar convite");
       navigate('/auth');
     } finally {
@@ -90,8 +90,10 @@ export default function AcceptInvite() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
+    try {
+      passwordSchema.parse(formData.password);
+    } catch (error: any) {
+      toast.error(error.errors?.[0]?.message || "Senha inválida");
       return;
     }
 

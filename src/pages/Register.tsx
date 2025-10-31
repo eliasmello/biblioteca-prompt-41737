@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useSEO } from "@/hooks/useSEO";
+import { logger } from "@/lib/logger";
+import { registrationSchema } from "@/lib/validation-schemas";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -26,6 +28,15 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    try {
+      registrationSchema.parse(formData);
+    } catch (error: any) {
+      const errorMessage = error.errors?.[0]?.message || "Dados inválidos";
+      toast.error(errorMessage);
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
@@ -33,7 +44,7 @@ export default function Register() {
         .from('user_registrations')
         .insert({
           name: formData.name,
-          email: formData.email,
+          email: formData.email.toLowerCase(),
           message: formData.message
         });
 
@@ -42,7 +53,7 @@ export default function Register() {
       toast.success("Solicitação enviada com sucesso! Aguarde a aprovação.");
       navigate('/auth');
     } catch (error: any) {
-      console.error('Erro ao enviar solicitação:', error);
+      logger.error('Erro ao enviar solicitação:', error);
       if (error.code === '23505') {
         toast.error("Este email já possui uma solicitação pendente.");
       } else {

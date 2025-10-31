@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { logger } from "@/lib/logger";
+import { invitationSchema } from "@/lib/validation-schemas";
 
 interface InviteUserDialogProps {
   onInviteCreated: () => void;
@@ -26,8 +28,11 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast.error("Por favor, preencha todos os campos obrigatórios.");
+    try {
+      invitationSchema.parse(formData);
+    } catch (error: any) {
+      const errorMessage = error.errors?.[0]?.message || "Dados inválidos";
+      toast.error(errorMessage);
       return;
     }
     
@@ -42,7 +47,7 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
         .maybeSingle();
 
       if (checkError) {
-        console.error('Erro ao verificar convite existente:', checkError);
+        logger.error('Erro ao verificar convite existente:', checkError);
         throw checkError;
       }
 
@@ -59,7 +64,7 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
         .maybeSingle();
 
       if (profileError) {
-        console.error('Erro ao verificar usuário existente:', profileError);
+        logger.error('Erro ao verificar usuário existente:', profileError);
         throw profileError;
       }
 
@@ -78,7 +83,7 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
         .single();
 
       if (inviteError) {
-        console.error('Erro ao criar convite:', inviteError);
+        logger.error('Erro ao criar convite:', inviteError);
         throw inviteError;
       }
       
@@ -88,7 +93,7 @@ export default function InviteUserDialog({ onInviteCreated }: InviteUserDialogPr
       onInviteCreated();
       
     } catch (error: any) {
-      console.error('Erro completo ao criar convite:', error);
+      logger.error('Erro completo ao criar convite:', error);
       toast.error(`Erro ao criar convite: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
