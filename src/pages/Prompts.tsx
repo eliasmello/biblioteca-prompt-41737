@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useImageGeneration } from "@/hooks/useImageGeneration";
 import {
   Select,
@@ -42,6 +43,7 @@ export default function Prompts() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, hasRole } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { 
     personalPrompts,
     publicPrompts,
@@ -55,12 +57,28 @@ export default function Prompts() {
   } = usePrompts();
   const { generateImage } = useImageGeneration();
 
-  // Combine personal and public prompts
-  const allPrompts = useMemo(() => {
-    return [...personalPrompts, ...publicPrompts];
-  }, [personalPrompts, publicPrompts]);
-
   const isMaster = hasRole('master');
+
+  // Get filter from URL or default to "todos"
+  const filterFromUrl = searchParams.get('filtro') || 'todos';
+  const [activeFilter, setActiveFilter] = useState<'todos' | 'meus' | 'favoritos' | 'publicos'>(
+    filterFromUrl as 'todos' | 'meus' | 'favoritos' | 'publicos'
+  );
+
+  // Filtered prompts based on active tab
+  const allPrompts = useMemo(() => {
+    switch (activeFilter) {
+      case 'meus':
+        return personalPrompts;
+      case 'favoritos':
+        return [...personalPrompts, ...publicPrompts].filter(p => p.isFavorite);
+      case 'publicos':
+        return publicPrompts;
+      case 'todos':
+      default:
+        return [...personalPrompts, ...publicPrompts];
+    }
+  }, [personalPrompts, publicPrompts, activeFilter]);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
@@ -75,9 +93,17 @@ export default function Prompts() {
     }
   });
   const [minNumber, setMinNumber] = useState<string>('');
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
+
+  // Update URL when filter changes
+  useEffect(() => {
+    if (activeFilter !== 'todos') {
+      setSearchParams({ filtro: activeFilter });
+    } else {
+      setSearchParams({});
+    }
+  }, [activeFilter, setSearchParams]);
 
   useEffect(() => {
     try {
@@ -238,14 +264,12 @@ export default function Prompts() {
       
       const matchesCategory = selectedCategory === 'all' || 
                              (prompt.category && prompt.category.toLowerCase() === selectedCategory);
-  
-      const matchesFavorites = !showFavoritesOnly || prompt.isFavorite;
 
       const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
   
-      return matchesSearch && matchesCategory && matchesFavorites && matchesMinNumber;
+      return matchesSearch && matchesCategory && matchesMinNumber;
     });
-  }, [sortedPrompts, debouncedSearchQuery, selectedCategory, showFavoritesOnly, minNumber]);
+  }, [sortedPrompts, debouncedSearchQuery, selectedCategory, minNumber]);
 
   if (loading) {
     return (
@@ -284,39 +308,51 @@ export default function Prompts() {
         <div>
           <h1 className="text-3xl font-bold gradient-text">Prompts</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie e organize seus prompts de IA
+            Explore e gerencie seus prompts de IA
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={() => navigate('/categories')}
-          >
-            <Settings className="w-4 h-4" />
-            Categorias
-          </Button>
+          {isMaster && (
+            <>
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => navigate('/categories')}
+              >
+                <Settings className="w-4 h-4" />
+                Categorias
+              </Button>
+              <ImportDialog onImport={handleImport} isImporting={isImporting} />
+            </>
+          )}
           <ExportDialog prompts={filteredPrompts} defaultFilename="prompts">
             <Button variant="outline" className="gap-2">
               <Download className="w-4 h-4" />
               Exportar
             </Button>
           </ExportDialog>
-          {isMaster && (
-            <>
-              <ImportDialog onImport={handleImport} isImporting={isImporting} />
-              <Button 
-                className="gap-2 bg-gradient-primary"
-                onClick={() => navigate('/prompts/new')}
-              >
-                <Plus className="w-4 h-4" />
-                Novo Prompt
-              </Button>
-            </>
+          {user && (
+            <Button 
+              className="gap-2 bg-gradient-primary"
+              onClick={() => navigate('/prompts/new')}
+            >
+              <Plus className="w-4 h-4" />
+              Novo Prompt
+            </Button>
           )}
         </div>
       </div>
+
+      {/* Tabs for filtering */}
+      <Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as typeof activeFilter)}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="todos">Todos</TabsTrigger>
+          <TabsTrigger value="meus">Meus Prompts</TabsTrigger>
+          <TabsTrigger value="favoritos">Favoritos</TabsTrigger>
+          <TabsTrigger value="publicos">Públicos</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters and Search */}
       <Card className="glass">
@@ -425,12 +461,6 @@ export default function Prompts() {
                 <button onClick={() => setMinNumber('')} className="ml-1">×</button>
               </Badge>
             )}
-            {showFavoritesOnly && (
-              <Badge variant="secondary" className="gap-1">
-                Apenas Favoritos
-                <button onClick={() => setShowFavoritesOnly(false)} className="ml-1">×</button>
-              </Badge>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -438,17 +468,8 @@ export default function Prompts() {
       {/* Results */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Mostrando {filteredPrompts.length} de {allPrompts.length} prompts
+          Mostrando {filteredPrompts.length} prompts
         </p>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="gap-2"
-          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-        >
-          <Star className={cn("w-4 h-4", showFavoritesOnly && "fill-current")} />
-          {showFavoritesOnly ? 'Mostrar todos' : 'Apenas favoritos'}
-        </Button>
       </div>
 
       {/* Prompts Grid/List */}

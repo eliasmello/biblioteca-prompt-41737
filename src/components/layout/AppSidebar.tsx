@@ -37,28 +37,25 @@ import { cn } from "@/lib/utils";
 
 const mainItems = [
   { title: "Prompts", url: "/prompts", icon: FileText },
-  { title: "Meus Prompts", url: "/my-prompts", icon: User },
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Favoritos", url: "/favorites", icon: Star },
-  { title: "Galeria Pública", url: "/gallery", icon: Globe },
 ];
 
 const adminItems = [
-  { title: "Usuários", url: "/users", icon: User },
+  { title: "Dashboard", url: "/dashboard", icon: Home, adminOnly: true },
+  { title: "Usuários", url: "/users", icon: User, adminOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
 
 export function AppSidebar() {
   const { state } = useSidebar();
-  const { profile, signOut } = useAuth();
-  const { prompts, importPrompts, refetch } = usePrompts();
+  const { profile, signOut, hasRole } = useAuth();
+  const { importPrompts, refetch } = usePrompts();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   const [isImporting, setIsImporting] = useState(false);
   
-  const favoritesCount = useMemo(() => prompts.filter((p) => p.isFavorite).length, [prompts]);
+  const isMaster = hasRole('master');
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -116,7 +113,7 @@ export function AppSidebar() {
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80 font-medium">
-            Main
+            Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -129,9 +126,6 @@ export function AppSidebar() {
                     >
                       <item.icon className="w-4 h-4" />
                       {!collapsed && <span>{item.title}</span>}
-                      {!collapsed && item.title === "Favoritos" && (
-                        <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">{favoritesCount}</span>
-                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -140,8 +134,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Import */}
-        {!collapsed && (
+        {/* Import - Admin only */}
+        {isMaster && !collapsed && (
           <div className="p-4 pt-0 space-y-2">
             <ImportDialog onImport={handleImport} isImporting={isImporting}>
               <Button size="sm" className="w-full justify-start gap-2" variant="default">
@@ -152,26 +146,28 @@ export function AppSidebar() {
           </div>
         )}
 
-
-
-
-        {/* Admin Section */}
+        {/* Settings & Admin Section */}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      className={getNavClassName(item.url)}
-                    >
-                      <item.icon className="w-4 h-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminItems.map((item) => {
+                // Hide admin-only items from non-admins
+                if (item.adminOnly && !isMaster) return null;
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        className={getNavClassName(item.url)}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
               <SidebarMenuItem>
                 <SidebarMenuButton onClick={signOut}>
                   <LogOut className="w-4 h-4" />

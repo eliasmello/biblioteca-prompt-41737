@@ -9,16 +9,13 @@ import Dashboard from "./pages/Dashboard";
 import Prompts from "./pages/Prompts";
 import PromptEditor from "./pages/PromptEditor";
 import Categories from "./pages/Categories";
-import MyPrompts from "./pages/MyPrompts";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import AcceptInvite from "./pages/AcceptInvite";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
-import Favorites from "./pages/Favorites";
 import SecurityTests from "./pages/SecurityTests";
-import PublicGallery from "./pages/PublicGallery";
 import SharedPrompt from "./pages/SharedPrompt";
 
 const queryClient = new QueryClient();
@@ -91,27 +88,10 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/favorites" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Favorites />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/gallery" element={
-              <ProtectedRoute>
-                <Layout>
-                  <PublicGallery />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/my-prompts" element={
-              <ProtectedRoute>
-                <Layout>
-                  <MyPrompts />
-                </Layout>
-              </ProtectedRoute>
-            } />
+            {/* Redirects from old routes */}
+            <Route path="/my-prompts" element={<Navigate to="/prompts?filtro=meus" replace />} />
+            <Route path="/favorites" element={<Navigate to="/prompts?filtro=favoritos" replace />} />
+            <Route path="/gallery" element={<Navigate to="/prompts?filtro=publicos" replace />} />
             <Route path="/users" element={
               <ProtectedRoute>
                 <Layout>
