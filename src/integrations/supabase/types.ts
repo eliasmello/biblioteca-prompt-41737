@@ -173,6 +173,7 @@ export type Database = {
           subcategory: string | null
           subject_tags: string[] | null
           tags: string[] | null
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
           updated_by: string
@@ -194,6 +195,7 @@ export type Database = {
           subcategory?: string | null
           subject_tags?: string[] | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
           updated_by: string
@@ -215,6 +217,7 @@ export type Database = {
           subcategory?: string | null
           subject_tags?: string[] | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
           updated_by?: string
