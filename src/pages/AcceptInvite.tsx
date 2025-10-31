@@ -52,34 +52,27 @@ export default function AcceptInvite() {
 
   const validateInvite = async () => {
     try {
-      console.log('AcceptInvite: Validating token:', token);
-      
+      // Usar função segura de validação ao invés de query direta
       const { data, error } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('token', token)
-        .is('used_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      console.log('AcceptInvite: Query result:', { data, error });
+        .rpc('validate_invitation_token', { _token: token });
 
       if (error) {
-        console.error('AcceptInvite: Database error:', error);
+        console.error('AcceptInvite: Validation error:', error);
         toast.error("Erro ao verificar convite");
         navigate('/auth');
         return;
       }
 
-      if (!data) {
-        console.log('AcceptInvite: No valid invitation found');
+      // A função retorna um array, pegar o primeiro resultado
+      const validInvitation = Array.isArray(data) ? data[0] : data;
+
+      if (!validInvitation || !validInvitation.is_valid) {
         toast.error("Convite inválido ou expirado");
         navigate('/auth');
         return;
       }
 
-      console.log('AcceptInvite: Valid invitation found:', data);
-      setInvitation(data);
+      setInvitation({ ...validInvitation, token }); // Manter token para uso posterior
     } catch (error) {
       console.error('AcceptInvite: Validation error:', error);
       toast.error("Erro ao validar convite");

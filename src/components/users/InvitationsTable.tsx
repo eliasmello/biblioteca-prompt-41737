@@ -29,53 +29,41 @@ export default function InvitationsTable({ invitations, onInvitationDeleted }: I
   const [deletingInvite, setDeletingInvite] = useState<string | null>(null);
 
   const copyInviteLink = async (token: string) => {
-    console.log('DEBUG: Token recebido na função copyInviteLink:', token);
-    
-    // Verificar se o token ainda existe no banco de dados
+    // Verificar se o token ainda é válido usando a função segura
     try {
-      const { data: invitation, error } = await supabase
-        .from('user_invitations')
-        .select('id, email, name, expires_at, used_at')
-        .eq('token', token)
-        .single();
+      const { data, error } = await supabase
+        .rpc('validate_invitation_token', { _token: token });
 
-      if (error || !invitation) {
-        console.error('DEBUG: Token não encontrado no banco:', token, error);
+      if (error) {
+        toast.error("Erro ao validar convite. Tente novamente.");
+        return;
+      }
+
+      const invitation = Array.isArray(data) ? data[0] : data;
+
+      if (!invitation) {
         toast.error("Este convite não é mais válido. Atualize a página e tente novamente.");
         return;
       }
 
-      if (invitation.used_at) {
-        console.error('DEBUG: Token já foi usado:', token);
-        toast.error("Este convite já foi utilizado.");
+      if (!invitation.is_valid) {
+        toast.error("Este convite expirou ou já foi utilizado.");
         return;
       }
-
-      if (new Date(invitation.expires_at) < new Date()) {
-        console.error('DEBUG: Token expirado:', token, invitation.expires_at);
-        toast.error("Este convite expirou.");
-        return;
-      }
-
-      console.log('DEBUG: Token válido encontrado:', invitation);
     } catch (error) {
-      console.error('DEBUG: Erro ao validar token:', error);
       toast.error("Erro ao validar convite. Tente novamente.");
       return;
     }
 
     const inviteUrl = `${window.location.origin}/accept-invite?token=${token}`;
-    console.log('DEBUG: Link gerado:', inviteUrl);
     
     try {
       await navigator.clipboard.writeText(inviteUrl);
       setCopiedInvite(token);
       toast.success("Link de convite copiado!");
       
-      // Reset copied state after 2 seconds
       setTimeout(() => setCopiedInvite(null), 2000);
     } catch (error) {
-      console.error('Erro ao copiar link:', error);
       toast.error("Erro ao copiar link");
     }
   };
