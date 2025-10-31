@@ -53,7 +53,9 @@ export default function Prompts() {
     deletePrompt, 
     importPrompts, 
     refetch,
-    fetchPreviewImage
+    fetchPreviewImage,
+    setPersonalPrompts,
+    setPublicPrompts
   } = usePrompts();
   const { generateImage } = useImageGeneration();
 
@@ -210,30 +212,44 @@ export default function Prompts() {
       const result = await generateImage(content, id);
       
       if (result) {
-        // Update local state immediately for instant UI feedback
-        const updatedPrompt = {
-          previewImage: result.imageUrl,
-          thumbnailUrl: result.thumbnailUrl,
-          preview_image: result.imageUrl,
-          thumbnail_url: result.thumbnailUrl
-        };
-        
-        // Update state
-        await updatePrompt(id, updatedPrompt, { silent: true });
+        // Update local state IMMEDIATELY for instant UI feedback
+        setPersonalPrompts(prev => 
+          prev.map(p => p.id === id ? { 
+            ...p, 
+            previewImage: result.imageUrl,
+            thumbnailUrl: result.thumbnailUrl,
+            preview_image: result.imageUrl,
+            thumbnail_url: result.thumbnailUrl
+          } : p)
+        );
+        setPublicPrompts(prev => 
+          prev.map(p => p.id === id ? { 
+            ...p, 
+            previewImage: result.imageUrl,
+            thumbnailUrl: result.thumbnailUrl,
+            preview_image: result.imageUrl,
+            thumbnail_url: result.thumbnailUrl
+          } : p)
+        );
         
         toast({
           title: "Imagem gerada! ✨",
           description: "A imagem foi gerada e atualizada com sucesso.",
         });
         
-        // Refresh data from database to ensure sync
-        setTimeout(() => {
-          refetch(true);
-          refetch(false);
-        }, 500);
+        // Sync with database SEQUENTIALLY after edge function completes
+        setTimeout(async () => {
+          await refetch(true);
+          await refetch(false);
+        }, 800);
       }
     } catch (error) {
       console.error('Erro ao gerar imagem:', error);
+      toast({
+        title: "Erro ao gerar imagem",
+        description: "Não foi possível gerar a imagem. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setGeneratingImageId(null);
     }

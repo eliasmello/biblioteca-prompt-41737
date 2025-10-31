@@ -207,6 +207,8 @@ export const usePrompts = () => {
       refetch: fetchPrompts,
       fetchPreviewImage,
       getPromptById,
+      setPersonalPrompts,
+      setPublicPrompts,
     }),
     [
       publicPrompts,
