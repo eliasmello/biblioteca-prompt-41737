@@ -53,6 +53,7 @@ export function mapDbPromptToPrompt(dbPrompt: any): Prompt {
     createdAt: dbPrompt.created_at,
     updatedAt: dbPrompt.updated_at,
     previewImage: dbPrompt.preview_image ?? null,
+    thumbnailUrl: dbPrompt.thumbnail_url ?? null,
   };
 }
 
@@ -76,7 +77,8 @@ export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<P
       .select(`
         id, title, category, subcategory, content, description, number,
         tags, keywords, style_tags, subject_tags, created_by, updated_by,
-        is_favorite, usage_count, created_at, updated_at, is_public
+        is_favorite, usage_count, created_at, updated_at, is_public,
+        preview_image, thumbnail_url
       `)
       .order('created_at', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
@@ -142,7 +144,7 @@ export async function createPrompt(
     .select(`
       id, title, category, subcategory, content, description, number,
       tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, is_public
+      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
     `)
     .single();
 
@@ -169,6 +171,7 @@ export async function updatePrompt(
   if (data.isFavorite !== undefined) dbUpdates.is_favorite = data.isFavorite;
   if (data.usageCount !== undefined) dbUpdates.usage_count = data.usageCount;
   if (data.previewImage !== undefined) dbUpdates.preview_image = data.previewImage;
+  if (data.thumbnailUrl !== undefined) dbUpdates.thumbnail_url = data.thumbnailUrl;
   if (data.isPublic !== undefined) dbUpdates.is_public = data.isPublic;
   if (data.tags !== undefined) dbUpdates.tags = data.tags;
   if (data.keywords !== undefined) dbUpdates.keywords = data.keywords;
@@ -182,7 +185,7 @@ export async function updatePrompt(
     .select(`
       id, title, category, subcategory, content, description, number,
       tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, is_public
+      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
     `)
     .single();
 
@@ -211,7 +214,7 @@ export async function getPromptById(id: string): Promise<Prompt | null> {
     .select(`
       id, title, category, subcategory, content, description, number,
       tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, is_public
+      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
     `)
     .eq('id', id)
     .maybeSingle();
@@ -269,7 +272,7 @@ export async function importPrompts(
     .select(`
       id, title, category, subcategory, content, description, number,
       tags, keywords, style_tags, subject_tags, created_by, updated_by,
-      is_favorite, usage_count, created_at, updated_at, preview_image, is_public
+      is_favorite, usage_count, created_at, updated_at, preview_image, thumbnail_url, is_public
     `);
 
   if (error) throw error;

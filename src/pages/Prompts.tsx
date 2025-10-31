@@ -128,10 +128,17 @@ export default function Prompts() {
   // Get unique categories from allPrompts (alphabetically sorted)
   const categories = [
     { value: "all", label: "Todas as Categorias" },
-    ...Array.from(new Set(allPrompts.map(p => p.category)))
-      .filter(Boolean)
-      .map(cat => ({ value: cat.toLowerCase(), label: cat }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+    ...(() => {
+      const byValue = new Map<string, string>();
+      for (const p of allPrompts) {
+        if (!p.category) continue;
+        const val = p.category.trim().toLowerCase();
+        if (!byValue.has(val)) byValue.set(val, p.category.trim());
+      }
+      return Array.from(byValue.entries())
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    })()
   ];
 
   const handlePreview = (id: string) => {

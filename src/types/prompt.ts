@@ -24,6 +24,8 @@ export interface Prompt {
   updated_at?: string; // Database field name
   previewImage?: string | null;
   preview_image?: string | null; // Database field name
+  thumbnailUrl?: string | null;
+  thumbnail_url?: string | null; // Database field name
   isPublic?: boolean;
   is_public?: boolean; // Database field name
 }
