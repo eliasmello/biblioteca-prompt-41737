@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
@@ -19,9 +19,11 @@ import {
   Users,
   Target
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { personalPrompts, loading, updatePrompt, refetch } = usePrompts();
   const { generateImage } = useImageGeneration();
   const { toast } = useToast();
@@ -29,6 +31,12 @@ export default function Dashboard() {
   
   // Use personal prompts on dashboard (user's own prompts)
   const prompts = personalPrompts;
+
+  useEffect(() => {
+    if (user) {
+      refetch(true); // Fetch personal prompts
+    }
+  }, [user, refetch]);
 
   useSEO({
     title: "Dashboard — Visão geral de prompts",
