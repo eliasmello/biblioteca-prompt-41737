@@ -11,41 +11,99 @@ import { useLoadingState } from './useLoadingState';
 export const usePrompts = () => {
   const [publicPrompts, setPublicPrompts] = useState<Prompt[]>([]);
   const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
+  const [personalCursor, setPersonalCursor] = useState<string | null>(null);
+  const [publicCursor, setPublicCursor] = useState<string | null>(null);
+  const [hasMorePersonal, setHasMorePersonal] = useState(false);
+  const [hasMorePublic, setHasMorePublic] = useState(false);
+  const [loadingMorePersonal, setLoadingMorePersonal] = useState(false);
+  const [loadingMorePublic, setLoadingMorePublic] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isLoading: loading, withLoading, isKeyLoading } = useLoadingState(false);
 
+  const loadInitial = useCallback(async () => {
+    if (!user) return;
+
+    await withLoading(async () => {
+      try {
+        // Reset state
+        setPersonalPrompts([]);
+        setPublicPrompts([]);
+        setPersonalCursor(null);
+        setPublicCursor(null);
+
+        // Load first page of personal prompts
+        const personalResult = await promptService.fetchPromptsPage({
+          personalOnly: true,
+          userId: user.id,
+          limit: 20,
+        });
+        setPersonalPrompts(personalResult.items);
+        setPersonalCursor(personalResult.nextCursor);
+        setHasMorePersonal(!!personalResult.nextCursor);
+
+        // Load first page of public prompts
+        const publicResult = await promptService.fetchPromptsPage({
+          personalOnly: false,
+          userId: user.id,
+          limit: 20,
+        });
+        setPublicPrompts(publicResult.items);
+        setPublicCursor(publicResult.nextCursor);
+        setHasMorePublic(!!publicResult.nextCursor);
+      } catch (error: any) {
+        toast({
+          title: 'Erro ao carregar prompts',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    }, 'load-initial');
+  }, [user, toast, withLoading]);
+
+  const loadMore = useCallback(async (personalOnly: boolean) => {
+    if (!user) return;
+
+    const cursor = personalOnly ? personalCursor : publicCursor;
+    if (!cursor) return;
+
+    const setLoadingMore = personalOnly ? setLoadingMorePersonal : setLoadingMorePublic;
+    setLoadingMore(true);
+
+    try {
+      const result = await promptService.fetchPromptsPage({
+        personalOnly,
+        userId: user.id,
+        limit: 20,
+        cursorCreatedAt: cursor,
+      });
+
+      if (personalOnly) {
+        setPersonalPrompts(prev => [...prev, ...result.items]);
+        setPersonalCursor(result.nextCursor);
+        setHasMorePersonal(!!result.nextCursor);
+      } else {
+        setPublicPrompts(prev => [...prev, ...result.items]);
+        setPublicCursor(result.nextCursor);
+        setHasMorePublic(!!result.nextCursor);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar mais prompts',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [user, personalCursor, publicCursor, toast]);
+
   const fetchPrompts = useCallback(
     async (personalOnly = false) => {
-      if (!user) return;
-
-      const key = personalOnly ? 'fetch-personal' : 'fetch-public';
-      
-      // Evita múltiplas requisições simultâneas da mesma categoria
-      if (isKeyLoading(key)) return;
-
-      await withLoading(async () => {
-        try {
-          const prompts = await promptService.fetchPrompts({
-            personalOnly,
-            userId: user.id,
-          });
-
-          if (personalOnly) {
-            setPersonalPrompts(prompts);
-          } else {
-            setPublicPrompts(prompts);
-          }
-        } catch (error: any) {
-          toast({
-            title: 'Erro ao carregar prompts',
-            description: error.message,
-            variant: 'destructive',
-          });
-        }
-      }, key);
+      // Deprecated - use loadInitial instead
+      await loadInitial();
     },
-    [user, toast]
+    [loadInitial]
   );
 
   const createPrompt = useCallback(
@@ -200,11 +258,17 @@ export const usePrompts = () => {
       personalPrompts,
       publicPrompts,
       loading,
+      loadingMorePersonal,
+      loadingMorePublic,
+      hasMorePersonal,
+      hasMorePublic,
       createPrompt,
       updatePrompt,
       deletePrompt,
       importPrompts,
       refetch: fetchPrompts,
+      loadInitial,
+      loadMore,
       fetchPreviewImage,
       getPromptById,
       setPersonalPrompts,
@@ -214,11 +278,17 @@ export const usePrompts = () => {
       publicPrompts,
       personalPrompts,
       loading,
+      loadingMorePersonal,
+      loadingMorePublic,
+      hasMorePersonal,
+      hasMorePublic,
       createPrompt,
       updatePrompt,
       deletePrompt,
       importPrompts,
       fetchPrompts,
+      loadInitial,
+      loadMore,
       fetchPreviewImage,
       getPromptById,
     ]

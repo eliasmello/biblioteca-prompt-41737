@@ -47,12 +47,18 @@ export default function Prompts() {
   const { 
     personalPrompts,
     publicPrompts,
-    loading, 
+    loading,
+    loadingMorePersonal,
+    loadingMorePublic,
+    hasMorePersonal,
+    hasMorePublic,
     createPrompt, 
     updatePrompt, 
     deletePrompt, 
     importPrompts, 
     refetch,
+    loadInitial,
+    loadMore,
     fetchPreviewImage,
     setPersonalPrompts,
     setPublicPrompts
@@ -118,13 +124,10 @@ export default function Prompts() {
     description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
   });
 
-  // Fetch all prompts (personal + public) sequencialmente para evitar concorrência
+  // Load initial prompts on mount
   useEffect(() => {
     if (user) {
-      (async () => {
-        await refetch(true);  // Fetch personal prompts primeiro
-        await refetch(false); // Fetch public prompts depois
-      })();
+      loadInitial();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -525,27 +528,80 @@ export default function Prompts() {
           </CardContent>
         </Card>
       ) : (
-        <div className={cn(
-          viewMode === 'grid' 
-            ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-            : "space-y-4"
-        )}>
-          {filteredPrompts.map((prompt) => (
-            <PromptCard
-              key={prompt.id}
-              prompt={prompt}
-              onPreview={handlePreview}
-              onToggleFavorite={handleToggleFavorite}
-              onCopy={handleCopy}
-              onEdit={undefined}
-              onDelete={undefined}
-              onGenerateImage={handleGenerateImage}
-              isGeneratingImage={generatingImageId === prompt.id}
-              loadPreview={fetchPreviewImage}
-              variant={viewMode}
-            />
-          ))}
-        </div>
+        <>
+          <div className={cn(
+            viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+              : "space-y-4"
+          )}>
+            {filteredPrompts.map((prompt) => (
+              <PromptCard
+                key={prompt.id}
+                prompt={prompt}
+                onPreview={handlePreview}
+                onToggleFavorite={handleToggleFavorite}
+                onCopy={handleCopy}
+                onEdit={undefined}
+                onDelete={undefined}
+                onGenerateImage={handleGenerateImage}
+                isGeneratingImage={generatingImageId === prompt.id}
+                loadPreview={fetchPreviewImage}
+                variant={viewMode}
+              />
+            ))}
+          </div>
+
+          {/* Load More Button */}
+          {((activeFilter === 'meus' || activeFilter === 'todos') && hasMorePersonal) || 
+           ((activeFilter === 'publicos' || activeFilter === 'todos') && hasMorePublic) ? (
+            <div className="flex justify-center mt-8">
+              {activeFilter === 'meus' && hasMorePersonal && (
+                <Button
+                  onClick={() => loadMore(true)}
+                  disabled={loadingMorePersonal}
+                  variant="outline"
+                  size="lg"
+                >
+                  {loadingMorePersonal ? 'Carregando...' : 'Carregar mais prompts pessoais'}
+                </Button>
+              )}
+              {activeFilter === 'publicos' && hasMorePublic && (
+                <Button
+                  onClick={() => loadMore(false)}
+                  disabled={loadingMorePublic}
+                  variant="outline"
+                  size="lg"
+                >
+                  {loadingMorePublic ? 'Carregando...' : 'Carregar mais prompts públicos'}
+                </Button>
+              )}
+              {activeFilter === 'todos' && (
+                <div className="flex gap-4">
+                  {hasMorePersonal && (
+                    <Button
+                      onClick={() => loadMore(true)}
+                      disabled={loadingMorePersonal}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais pessoais'}
+                    </Button>
+                  )}
+                  {hasMorePublic && (
+                    <Button
+                      onClick={() => loadMore(false)}
+                      disabled={loadingMorePublic}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais públicos'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </>
       )}
 
       {/* Preview Modal */}

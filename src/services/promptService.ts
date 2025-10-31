@@ -23,6 +23,13 @@ const SELECT_FULL = `
 export interface FetchPromptsOptions {
   personalOnly?: boolean;
   userId?: string;
+  limit?: number;
+  cursorCreatedAt?: string;
+}
+
+export interface FetchPromptsPageResult {
+  items: Prompt[];
+  nextCursor: string | null;
 }
 
 export interface CreatePromptData {
@@ -78,7 +85,72 @@ export function mapDbPromptToPrompt(dbPrompt: any): Prompt {
 }
 
 /**
+ * Fetches a single page of prompts using keyset pagination
+ */
+export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promise<FetchPromptsPageResult> {
+  const { personalOnly = false, userId, limit = 20, cursorCreatedAt } = options;
+  
+  if (!userId) {
+    throw new Error('User ID is required to fetch prompts');
+  }
+
+  let pageSize = limit;
+  let retryCount = 0;
+
+  while (retryCount < 2) {
+    try {
+      let query = supabase
+        .from('prompts')
+        .select(SELECT_SUMMARY)
+        .order('created_at', { ascending: false })
+        .limit(pageSize);
+
+      if (personalOnly) {
+        query = query.eq('created_by', userId);
+      } else {
+        query = query.eq('is_public', true);
+      }
+
+      // Apply cursor for pagination
+      if (cursorCreatedAt) {
+        query = query.lt('created_at', cursorCreatedAt);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        if (isTimeoutError(error) && retryCount < 1) {
+          retryCount++;
+          pageSize = Math.floor(pageSize / 2);
+          logger.warn(`Timeout na página, reduzindo para ${pageSize} itens`);
+          continue;
+        }
+        throw error;
+      }
+
+      const items = (data || []).map(mapDbPromptToPrompt);
+      const nextCursor = items.length === pageSize && items.length > 0
+        ? items[items.length - 1].createdAt
+        : null;
+
+      return { items, nextCursor };
+    } catch (err: any) {
+      if (isTimeoutError(err) && retryCount < 1) {
+        retryCount++;
+        pageSize = Math.floor(pageSize / 2);
+        logger.warn(`Erro de timeout, tentando com ${pageSize} itens`);
+        continue;
+      }
+      throw new Error('Tempo limite excedido ao carregar prompts. Tente novamente.');
+    }
+  }
+
+  return { items: [], nextCursor: null };
+}
+
+/**
  * Fetches prompts from the database with pagination and retry logic
+ * @deprecated Use fetchPromptsPage for better performance
  */
 export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<Prompt[]> {
   const { personalOnly = false, userId } = options;

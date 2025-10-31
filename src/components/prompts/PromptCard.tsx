@@ -259,7 +259,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
 
           {/* Content preview */}
           <p className="text-sm text-muted-foreground line-clamp-2 md:line-clamp-3 mb-4">
-            {cleanPromptContent(prompt.content)}
+            {prompt.description || prompt.content ? cleanPromptContent(prompt.description || prompt.content) : '—'}
           </p>
 
           {/* Tags */}
