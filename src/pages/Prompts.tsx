@@ -581,7 +581,7 @@ export default function Prompts() {
                   variant="outline"
                   size="lg"
                 >
-                  {loadingMorePersonal ? 'Carregando...' : 'Carregar mais prompts pessoais'}
+                  {loadingMorePersonal ? 'Carregando...' : 'Carregar mais'}
                 </Button>
               )}
               {activeFilter === 'publicos' && hasMorePublic && (
@@ -591,7 +591,7 @@ export default function Prompts() {
                   variant="outline"
                   size="lg"
                 >
-                  {loadingMorePublic ? 'Carregando...' : 'Carregar mais prompts públicos'}
+                  {loadingMorePublic ? 'Carregando...' : 'Carregar mais'}
                 </Button>
               )}
               {activeFilter === 'todos' && (
@@ -603,7 +603,7 @@ export default function Prompts() {
                       variant="outline"
                       size="lg"
                     >
-                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais pessoais'}
+                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais'}
                     </Button>
                   )}
                   {hasMorePublic && (
@@ -613,7 +613,7 @@ export default function Prompts() {
                       variant="outline"
                       size="lg"
                     >
-                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais públicos'}
+                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais'}
                     </Button>
                   )}
                 </div>
