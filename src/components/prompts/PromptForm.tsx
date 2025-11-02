@@ -14,6 +14,7 @@ import { Prompt } from '@/types/prompt';
 import CategorySelect from '@/components/prompts/CategorySelect';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const promptSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -78,32 +79,67 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
     form.setValue('previewImage', prompt.previewImage || '', { shouldDirty: false });
   }, [prompt?.previewImage, form]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Por favor, selecione apenas arquivos de imagem.');
-        return;
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Arquivo muito grande. Máximo 5MB.');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setPreviewImage(result);
-        form.setValue('previewImage', result, { shouldDirty: true });
-      };
-      reader.onerror = () => {
-        alert('Erro ao ler o arquivo. Tente novamente.');
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, selecione apenas arquivos de imagem.',
+        variant: 'destructive',
+      });
+      return;
     }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Erro',
+        description: 'Arquivo muito grande. Máximo 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Upload para Storage
+      const timestamp = Date.now();
+      const randomId = crypto.randomUUID().split('-')[0];
+      const filename = `manual-upload-${randomId}-${timestamp}.png`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('prompt-images')
+        .upload(filename, file, {
+          contentType: file.type,
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('prompt-images')
+        .getPublicUrl(uploadData.path);
+
+      // Atualizar preview local
+      setPreviewImage(publicUrl);
+      form.setValue('previewImage', publicUrl, { shouldDirty: true });
+      
+      toast({
+        title: 'Upload concluído!',
+        description: 'Imagem enviada com sucesso.',
+      });
+    } catch (err) {
+      console.error('Erro ao fazer upload:', err);
+      toast({
+        title: 'Erro no upload',
+        description: 'Não foi possível enviar a imagem. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+    
     // Reset input value to allow same file selection
     event.target.value = '';
   };

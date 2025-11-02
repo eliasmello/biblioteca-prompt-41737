@@ -39,8 +39,8 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
         {/* Image preview */}
         <div className={cn('relative', variant === 'list' ? 'w-28 sm:w-40 md:w-48 shrink-0' : 'mb-4')}>
           {(() => {
-            const thumbnailUrl = prompt.thumbnail_url || prompt.thumbnailUrl || prompt.previewImage;
-            const fullImageUrl = prompt.preview_image || prompt.previewImage;
+            const thumbnailUrl = prompt.thumbnail_url || prompt.thumbnailUrl || prompt.preview_image || prompt.previewImage;
+            const fullImageUrl = prompt.preview_image || prompt.previewImage || prompt.thumbnail_url || prompt.thumbnailUrl;
             
             return (
               <LazyImage
