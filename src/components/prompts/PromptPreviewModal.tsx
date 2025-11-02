@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Copy, Star, Edit, Loader2 } from "lucide-react";
+import { Copy, Star, Edit, Loader2, Trash2 } from "lucide-react";
 import { cn, toTitleCase } from "@/lib/utils";
 import { getPromptById } from "@/services/promptService";
 import { Prompt } from "@/types/prompt";
@@ -108,7 +108,7 @@ export function PromptPreviewModal({
                 "h-8 w-8 p-0 hover:bg-accent/50 transition-colors",
                 prompt.isFavorite && "text-favorite hover:text-favorite/80"
               )}
-              title={prompt.isFavorite ? "Remove from favorites" : "Add to favorites"}
+              title={prompt.isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
             >
               <Star className={cn("w-4 h-4", prompt.isFavorite && "fill-current")} />
             </Button>
@@ -117,10 +117,24 @@ export function PromptPreviewModal({
               size="sm" 
               onClick={() => onEdit(prompt.id)}
               className="h-8 w-8 p-0 hover:bg-accent/50 transition-colors"
-              title="Edit prompt"
+              title="Editar prompt"
             >
               <Edit className="w-4 h-4" />
             </Button>
+            {onDelete && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  onDelete(prompt.id);
+                  onClose();
+                }}
+                className="h-8 w-8 p-0 hover:bg-destructive/50 hover:text-destructive-foreground transition-colors"
+                title="Deletar prompt"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           <div className="pr-20">
