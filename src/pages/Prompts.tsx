@@ -322,7 +322,7 @@ export default function Prompts() {
   }, [allPrompts, sortBy]);
 
   const filteredPrompts = useMemo(() => {
-    return sortedPrompts.filter(prompt => {
+    const filtered = sortedPrompts.filter(prompt => {
       const q = debouncedSearchQuery.toLowerCase();
       const matchesSearch = debouncedSearchQuery === '' || 
                            prompt.title.toLowerCase().includes(q) ||
@@ -340,6 +340,13 @@ export default function Prompts() {
   
       return matchesSearch && matchesCategory && matchesMinNumber;
     });
+    
+    // Deduplicação defensiva final por ID
+    const deduped = new Map<string, Prompt>();
+    for (const p of filtered) {
+      if (!deduped.has(p.id)) deduped.set(p.id, p);
+    }
+    return Array.from(deduped.values());
   }, [sortedPrompts, debouncedSearchQuery, selectedCategory, minNumber]);
 
   if (loading) {
@@ -472,6 +479,7 @@ export default function Prompts() {
                 value={minNumber}
                 onChange={(e) => setMinNumber(e.target.value)}
                 className="pl-10"
+                title="Este filtro oculta números menores"
               />
             </div>
 
@@ -577,14 +585,28 @@ export default function Prompts() {
                       return;
                     }
 
+                    // Tentar encontrar primeiro
                     let element = document.querySelector(`[data-prompt-number="${num}"]`);
                     
                     if (!element) {
+                      // Salvar filtros atuais
+                      const prevSearch = searchQuery;
+                      const prevCategory = selectedCategory;
+                      const prevMinNum = minNumber;
+                      const prevSort = sortBy;
+                      
+                      // Limpar filtros temporariamente
+                      setSearchQuery("");
+                      setSelectedCategory("all");
+                      setMinNumber("");
+                      setSortBy("numberAsc");
+                      
                       toast({
                         title: "Carregando todos os prompts...",
                         description: "Buscando prompt #" + num,
                       });
                       
+                      // Carregar todos os prompts
                       if (activeFilter === 'todos') {
                         await loadAll(true);
                         await loadAll(false);
@@ -592,16 +614,36 @@ export default function Prompts() {
                         await loadAll(true);
                       } else if (activeFilter === 'publicos') {
                         await loadAll(false);
+                      } else if (activeFilter === 'favoritos') {
+                        await loadAll(true);
+                        await loadAll(false);
                       }
                       
+                      // Aguardar re-renderização
+                      await new Promise(resolve => setTimeout(resolve, 300));
                       element = document.querySelector(`[data-prompt-number="${num}"]`);
+                      
+                      // Restaurar filtros se não encontrou
+                      if (!element) {
+                        setSearchQuery(prevSearch);
+                        setSelectedCategory(prevCategory);
+                        setMinNumber(prevMinNum);
+                        setSortBy(prevSort);
+                      }
                     }
 
                     if (element) {
                       element.scrollIntoView({ behavior: "smooth", block: "center" });
                       setGoToNumber("");
+                      
+                      // Destacar elemento
+                      element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+                      setTimeout(() => {
+                        element?.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+                      }, 2000);
+                      
                       toast({
-                        title: "Navegando para o prompt #" + num,
+                        title: "Prompt #" + num + " encontrado!",
                       });
                     } else {
                       toast({
@@ -626,14 +668,28 @@ export default function Prompts() {
                     return;
                   }
 
+                  // Tentar encontrar primeiro
                   let element = document.querySelector(`[data-prompt-number="${num}"]`);
                   
                   if (!element) {
+                    // Salvar filtros atuais
+                    const prevSearch = searchQuery;
+                    const prevCategory = selectedCategory;
+                    const prevMinNum = minNumber;
+                    const prevSort = sortBy;
+                    
+                    // Limpar filtros temporariamente
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                    setMinNumber("");
+                    setSortBy("numberAsc");
+                    
                     toast({
                       title: "Carregando todos os prompts...",
                       description: "Buscando prompt #" + num,
                     });
                     
+                    // Carregar todos os prompts
                     if (activeFilter === 'todos') {
                       await loadAll(true);
                       await loadAll(false);
@@ -641,16 +697,36 @@ export default function Prompts() {
                       await loadAll(true);
                     } else if (activeFilter === 'publicos') {
                       await loadAll(false);
+                    } else if (activeFilter === 'favoritos') {
+                      await loadAll(true);
+                      await loadAll(false);
                     }
                     
+                    // Aguardar re-renderização
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     element = document.querySelector(`[data-prompt-number="${num}"]`);
+                    
+                    // Restaurar filtros se não encontrou
+                    if (!element) {
+                      setSearchQuery(prevSearch);
+                      setSelectedCategory(prevCategory);
+                      setMinNumber(prevMinNum);
+                      setSortBy(prevSort);
+                    }
                   }
 
                   if (element) {
                     element.scrollIntoView({ behavior: "smooth", block: "center" });
                     setGoToNumber("");
+                    
+                    // Destacar elemento
+                    element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+                    setTimeout(() => {
+                      element?.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+                    }, 2000);
+                    
                     toast({
-                      title: "Navegando para o prompt #" + num,
+                      title: "Prompt #" + num + " encontrado!",
                     });
                   } else {
                     toast({
@@ -663,6 +739,84 @@ export default function Prompts() {
                 variant="outline"
               >
                 Ir
+              </Button>
+              <Button 
+                onClick={async () => {
+                  setGoToNumber("1");
+                  
+                  // Tentar encontrar primeiro
+                  let element = document.querySelector(`[data-prompt-number="1"]`);
+                  
+                  if (!element) {
+                    // Salvar filtros atuais
+                    const prevSearch = searchQuery;
+                    const prevCategory = selectedCategory;
+                    const prevMinNum = minNumber;
+                    const prevSort = sortBy;
+                    
+                    // Limpar filtros temporariamente
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                    setMinNumber("");
+                    setSortBy("numberAsc");
+                    
+                    toast({
+                      title: "Carregando todos os prompts...",
+                      description: "Buscando prompt #1",
+                    });
+                    
+                    // Carregar todos os prompts
+                    if (activeFilter === 'todos') {
+                      await loadAll(true);
+                      await loadAll(false);
+                    } else if (activeFilter === 'meus') {
+                      await loadAll(true);
+                    } else if (activeFilter === 'publicos') {
+                      await loadAll(false);
+                    } else if (activeFilter === 'favoritos') {
+                      await loadAll(true);
+                      await loadAll(false);
+                    }
+                    
+                    // Aguardar re-renderização
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    element = document.querySelector(`[data-prompt-number="1"]`);
+                    
+                    // Restaurar filtros se não encontrou
+                    if (!element) {
+                      setSearchQuery(prevSearch);
+                      setSelectedCategory(prevCategory);
+                      setMinNumber(prevMinNum);
+                      setSortBy(prevSort);
+                    }
+                  }
+
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth", block: "center" });
+                    setGoToNumber("");
+                    
+                    // Destacar elemento
+                    element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+                    setTimeout(() => {
+                      element?.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+                    }, 2000);
+                    
+                    toast({
+                      title: "Prompt #1 encontrado!",
+                    });
+                  } else {
+                    toast({
+                      title: "Prompt não encontrado",
+                      description: "O prompt #1 não existe",
+                      variant: "destructive",
+                    });
+                  }
+                }} 
+                variant="outline"
+                size="icon"
+                title="Ir para o prompt #1"
+              >
+                #1
               </Button>
             </div>
           </div>
