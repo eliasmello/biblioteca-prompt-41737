@@ -138,7 +138,7 @@ export function AppSidebar() {
         {isMaster && !collapsed && (
           <div className="p-4 pt-0 space-y-2">
             <ImportDialog onImport={handleImport} isImporting={isImporting}>
-              <Button size="sm" className="w-full justify-start gap-2" variant="default">
+              <Button size="sm" className="w-full justify-start gap-2" variant="outline">
                 <Upload className="w-4 h-4" />
                 Importar Prompts
               </Button>
