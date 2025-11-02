@@ -5,9 +5,9 @@ import { logger } from '@/lib/logger';
 
 const PAGE_SIZE = 50;
 
-// Colunas para listagem (sem content e arrays grandes)
+// Colunas para listagem (incluindo content)
 const SELECT_SUMMARY = `
-  id, title, category, subcategory, description, number,
+  id, title, category, subcategory, content, description, number,
   created_by, updated_by, is_favorite, usage_count,
   created_at, updated_at, is_public, preview_image, thumbnail_url
 `;
