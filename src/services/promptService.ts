@@ -101,6 +101,7 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
       let query = supabase
         .from('prompts')
         .select(SELECT_SUMMARY)
+        .order('number', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(pageSize);
 
@@ -284,6 +285,30 @@ function isTimeoutError(error: any): boolean {
 }
 
 /**
+ * Gets the next available prompt number for a user
+ */
+async function getNextPromptNumber(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('number')
+    .eq('created_by', userId)
+    .order('number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data?.number || 0) + 1;
+}
+
+/**
+ * Extracts number from title like "Prompt #25"
+ */
+function extractNumberFromTitle(title: string): number | null {
+  const match = title.match(/Prompt #(\d+)/i);
+  return match ? parseInt(match[1]) : null;
+}
+
+/**
  * Creates a new prompt in the database
  */
 export async function createPrompt(
@@ -291,6 +316,21 @@ export async function createPrompt(
   userId: string
 ): Promise<Prompt> {
   const parsed = parsePromptContent(data.content);
+  
+  // Determinar número do prompt
+  let promptNumber = parsed.number || data.number;
+  
+  if (!promptNumber) {
+    // Tentar extrair do título
+    if (data.title) {
+      promptNumber = extractNumberFromTitle(data.title);
+    }
+    
+    // Se ainda não tiver número, gerar automaticamente
+    if (!promptNumber) {
+      promptNumber = await getNextPromptNumber(userId);
+    }
+  }
 
   const dbPrompt = {
     title: data.title || 'Untitled',
@@ -298,7 +338,7 @@ export async function createPrompt(
     subcategory: parsed.subcategory || data.subcategory,
     content: data.content,
     description: data.description,
-    number: parsed.number || data.number,
+    number: promptNumber,
     tags: [...(parsed.extractedTags?.style || []), ...(parsed.extractedTags?.subject || [])],
     keywords: [],
     style_tags: parsed.extractedTags?.style || [],

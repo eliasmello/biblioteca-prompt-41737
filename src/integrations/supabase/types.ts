@@ -167,7 +167,7 @@ export type Database = {
           is_favorite: boolean | null
           is_public: boolean | null
           keywords: string[] | null
-          number: number | null
+          number: number
           preview_image: string | null
           style_tags: string[] | null
           subcategory: string | null
@@ -189,7 +189,7 @@ export type Database = {
           is_favorite?: boolean | null
           is_public?: boolean | null
           keywords?: string[] | null
-          number?: number | null
+          number: number
           preview_image?: string | null
           style_tags?: string[] | null
           subcategory?: string | null
@@ -211,7 +211,7 @@ export type Database = {
           is_favorite?: boolean | null
           is_public?: boolean | null
           keywords?: string[] | null
-          number?: number | null
+          number?: number
           preview_image?: string | null
           style_tags?: string[] | null
           subcategory?: string | null
