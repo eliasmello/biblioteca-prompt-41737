@@ -301,6 +301,34 @@ async function getNextPromptNumber(userId: string): Promise<number> {
 }
 
 /**
+ * Validates if a prompt number is unique for a user
+ */
+export async function validatePromptNumber(
+  number: number,
+  userId: string,
+  excludePromptId?: string
+): Promise<boolean> {
+  let query = supabase
+    .from('prompts')
+    .select('id')
+    .eq('created_by', userId)
+    .eq('number', number);
+
+  if (excludePromptId) {
+    query = query.neq('id', excludePromptId);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    console.error('Error validating prompt number:', error);
+    return true; // Em caso de erro, assume válido para não bloquear
+  }
+
+  return !data; // Válido se não encontrou nenhum registro
+}
+
+/**
  * Extracts number from title like "Prompt #25"
  */
 function extractNumberFromTitle(title: string): number | null {

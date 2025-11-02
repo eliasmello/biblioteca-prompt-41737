@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,7 @@ import CategorySelect from '@/components/prompts/CategorySelect';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { validatePromptNumber } from '@/services/promptService';
 
 const promptSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -38,6 +39,7 @@ interface PromptFormProps {
 
 export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }: PromptFormProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(prompt?.previewImage || null);
+  const [numberError, setNumberError] = useState<string | null>(null);
   const { generateImage, editImage, isLoading: isGeneratingImage } = useImageGeneration();
   const { toast } = useToast();
 
@@ -78,6 +80,59 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
     setPreviewImage(prompt.previewImage || null);
     form.setValue('previewImage', prompt.previewImage || '', { shouldDirty: false });
   }, [prompt?.previewImage, form]);
+
+  // Sincronização inteligente: título ↔ número
+  const syncTitleWithNumber = useCallback((title: string) => {
+    const match = title.match(/^Prompt #(\d+)$/i);
+    if (match) {
+      const extractedNumber = parseInt(match[1]);
+      const currentNumber = form.watch('number');
+      if (currentNumber !== extractedNumber) {
+        form.setValue('number', extractedNumber, { shouldDirty: true });
+      }
+    }
+  }, [form]);
+
+  const syncNumberWithTitle = useCallback(async (number: number | undefined) => {
+    if (!number) {
+      setNumberError(null);
+      return;
+    }
+
+    const currentTitle = form.watch('title');
+    const isPromptFormat = /^Prompt #\d+$/i.test(currentTitle);
+    
+    // Validar unicidade do número
+    const { data } = await supabase.from('profiles').select('id').single();
+    const userId = data?.id;
+    
+    if (userId) {
+      const isValid = await validatePromptNumber(number, userId, prompt?.id);
+      if (!isValid) {
+        setNumberError('Este número já está em uso');
+      } else {
+        setNumberError(null);
+        
+        // Se título segue padrão "Prompt #X", atualizar automaticamente
+        if (isPromptFormat) {
+          form.setValue('title', `Prompt #${number}`, { shouldDirty: true });
+        }
+      }
+    }
+  }, [form, prompt?.id]);
+
+  // Watch para mudanças no título
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'title' && value.title) {
+        syncTitleWithNumber(value.title);
+      }
+      if (name === 'number') {
+        syncNumberWithTitle(value.number);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, syncTitleWithNumber, syncNumberWithTitle]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -214,13 +269,20 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="number">Número (opcional)</Label>
+              <Label htmlFor="number">Número</Label>
               <Input
                 id="number"
                 type="number"
+                min="1"
                 placeholder="Ex: 6"
                 {...form.register('number', { valueAsNumber: true })}
               />
+              {numberError && (
+                <p className="text-sm text-destructive">{numberError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Se o título for "Prompt #X", o número será sincronizado automaticamente
+              </p>
             </div>
           </div>
 
