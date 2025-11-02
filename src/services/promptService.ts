@@ -101,8 +101,8 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
       let query = supabase
         .from('prompts')
         .select(SELECT_SUMMARY)
-        .order('number', { ascending: false })
-        .order('created_at', { ascending: false })
+        .order('number', { ascending: true })
+        .order('created_at', { ascending: true })
         .limit(pageSize);
 
       if (personalOnly) {
@@ -113,7 +113,7 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
 
       // Apply cursor for pagination using number and created_at
       if (cursor) {
-        query = query.or(`number.lt.${cursor.number},and(number.eq.${cursor.number},created_at.lt.${cursor.createdAt})`);
+        query = query.or(`number.gt.${cursor.number},and(number.eq.${cursor.number},created_at.gt.${cursor.createdAt})`);
       }
 
       const { data, error } = await query;
@@ -215,7 +215,8 @@ export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<P
       let singleQuery = supabase
         .from('prompts')
         .select(SELECT_SUMMARY)
-        .order('created_at', { ascending: false });
+        .order('number', { ascending: true })
+        .order('created_at', { ascending: true });
 
       if (personalOnly) {
         singleQuery = singleQuery.eq('created_by', userId);
@@ -250,7 +251,8 @@ export async function fetchPrompts(options: FetchPromptsOptions = {}): Promise<P
       let paginatedQuery = supabase
         .from('prompts')
         .select(SELECT_SUMMARY)
-        .order('created_at', { ascending: false })
+        .order('number', { ascending: true })
+        .order('created_at', { ascending: true })
         .range(from, from + pageSize - 1);
 
       if (personalOnly) {
