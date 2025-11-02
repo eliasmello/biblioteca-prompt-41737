@@ -77,18 +77,29 @@ export default function Prompts() {
     filterFromUrl as 'todos' | 'meus' | 'favoritos' | 'publicos'
   );
 
+  // Helper function to merge and deduplicate prompts by id
+  const mergeAndDedupe = (...lists: Prompt[][]) => {
+    const map = new Map<string, Prompt>();
+    for (const list of lists) {
+      for (const p of list) {
+        if (!map.has(p.id)) map.set(p.id, p);
+      }
+    }
+    return Array.from(map.values());
+  };
+
   // Filtered prompts based on active tab
   const allPrompts = useMemo(() => {
     switch (activeFilter) {
       case 'meus':
         return personalPrompts;
-      case 'favoritos':
-        return [...personalPrompts, ...publicPrompts].filter(p => p.isFavorite);
       case 'publicos':
         return publicPrompts;
+      case 'favoritos':
+        return mergeAndDedupe(personalPrompts, publicPrompts).filter(p => p.isFavorite);
       case 'todos':
       default:
-        return [...personalPrompts, ...publicPrompts];
+        return mergeAndDedupe(personalPrompts, publicPrompts);
     }
   }, [personalPrompts, publicPrompts, activeFilter]);
 
@@ -512,9 +523,24 @@ export default function Prompts() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <Button
               variant="outline"
-              onClick={() => {
-                const personalOnly = activeFilter === 'meus';
-                loadAll(personalOnly);
+              onClick={async () => {
+                toast({
+                  title: "Carregando todos os prompts...",
+                  description: "Isso pode levar alguns segundos",
+                });
+                
+                if (activeFilter === 'todos') {
+                  await loadAll(true);  // Carregar "meus"
+                  await loadAll(false); // Carregar "públicos"
+                } else if (activeFilter === 'meus') {
+                  await loadAll(true);
+                } else if (activeFilter === 'publicos') {
+                  await loadAll(false);
+                }
+                
+                toast({
+                  title: "Todos os prompts carregados!",
+                });
               }}
               disabled={loadingAll}
               className="w-full"
@@ -526,7 +552,6 @@ export default function Prompts() {
               variant="outline"
               onClick={() => {
                 window.scrollTo({ top: 0, behavior: "smooth" });
-                loadInitial();
               }}
               className="w-full"
             >
@@ -540,39 +565,99 @@ export default function Prompts() {
                 placeholder="Nº do prompt"
                 value={goToNumber}
                 onChange={(e) => setGoToNumber(e.target.value)}
-                onKeyDown={(e) => {
+                onKeyDown={async (e) => {
                   if (e.key === "Enter") {
                     const num = parseInt(goToNumber);
-                    if (!isNaN(num) && num > 0) {
-                      const element = document.querySelector(`[data-prompt-number="${num}"]`);
-                      if (element) {
-                        element.scrollIntoView({ behavior: "smooth", block: "center" });
-                      } else {
-                        toast({
-                          title: "Prompt não encontrado",
-                          description: `Prompt #${num} não está visível. Tente carregar todos os prompts primeiro.`,
-                          variant: "destructive",
-                        });
+                    if (isNaN(num)) {
+                      toast({
+                        title: "Número inválido",
+                        description: "Por favor, insira um número válido",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    let element = document.querySelector(`[data-prompt-number="${num}"]`);
+                    
+                    if (!element) {
+                      toast({
+                        title: "Carregando todos os prompts...",
+                        description: "Buscando prompt #" + num,
+                      });
+                      
+                      if (activeFilter === 'todos') {
+                        await loadAll(true);
+                        await loadAll(false);
+                      } else if (activeFilter === 'meus') {
+                        await loadAll(true);
+                      } else if (activeFilter === 'publicos') {
+                        await loadAll(false);
                       }
+                      
+                      element = document.querySelector(`[data-prompt-number="${num}"]`);
+                    }
+
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth", block: "center" });
+                      setGoToNumber("");
+                      toast({
+                        title: "Navegando para o prompt #" + num,
+                      });
+                    } else {
+                      toast({
+                        title: "Prompt não encontrado",
+                        description: "O prompt #" + num + " não existe",
+                        variant: "destructive",
+                      });
                     }
                   }
                 }}
                 className="flex-1"
               />
               <Button 
-                onClick={() => {
+                onClick={async () => {
                   const num = parseInt(goToNumber);
-                  if (!isNaN(num) && num > 0) {
-                    const element = document.querySelector(`[data-prompt-number="${num}"]`);
-                    if (element) {
-                      element.scrollIntoView({ behavior: "smooth", block: "center" });
-                    } else {
-                      toast({
-                        title: "Prompt não encontrado",
-                        description: `Prompt #${num} não está visível. Tente carregar todos os prompts primeiro.`,
-                        variant: "destructive",
-                      });
+                  if (isNaN(num)) {
+                    toast({
+                      title: "Número inválido",
+                      description: "Por favor, insira um número válido",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  let element = document.querySelector(`[data-prompt-number="${num}"]`);
+                  
+                  if (!element) {
+                    toast({
+                      title: "Carregando todos os prompts...",
+                      description: "Buscando prompt #" + num,
+                    });
+                    
+                    if (activeFilter === 'todos') {
+                      await loadAll(true);
+                      await loadAll(false);
+                    } else if (activeFilter === 'meus') {
+                      await loadAll(true);
+                    } else if (activeFilter === 'publicos') {
+                      await loadAll(false);
                     }
+                    
+                    element = document.querySelector(`[data-prompt-number="${num}"]`);
+                  }
+
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth", block: "center" });
+                    setGoToNumber("");
+                    toast({
+                      title: "Navegando para o prompt #" + num,
+                    });
+                  } else {
+                    toast({
+                      title: "Prompt não encontrado",
+                      description: "O prompt #" + num + " não existe",
+                      variant: "destructive",
+                    });
                   }
                 }} 
                 variant="outline"

@@ -14,6 +14,7 @@ import { Prompt } from '@/types/prompt';
 import CategorySelect from '@/components/prompts/CategorySelect';
 import { useImageGeneration } from '@/hooks/useImageGeneration';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePromptNumber } from '@/services/promptService';
 
@@ -43,6 +44,8 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
   const { generateImage, editImage, isLoading: isGeneratingImage } = useImageGeneration();
   const { toast } = useToast();
 
+  const { hasRole } = useAuth();
+  
   const form = useForm<PromptFormData>({
     resolver: zodResolver(promptSchema),
     defaultValues: {
@@ -53,7 +56,7 @@ export default function PromptForm({ prompt, onSubmit, onCancel, isSubmitting }:
       description: prompt?.description || '',
       number: prompt?.number || undefined,
       previewImage: prompt?.previewImage || '',
-      isPublic: prompt?.isPublic || false,
+      isPublic: prompt?.isPublic ?? (hasRole('master') ? true : false),
     }
   });
 
