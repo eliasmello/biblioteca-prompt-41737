@@ -11,12 +11,13 @@ import { useLoadingState } from './useLoadingState';
 export const usePrompts = () => {
   const [publicPrompts, setPublicPrompts] = useState<Prompt[]>([]);
   const [personalPrompts, setPersonalPrompts] = useState<Prompt[]>([]);
-  const [personalCursor, setPersonalCursor] = useState<string | null>(null);
-  const [publicCursor, setPublicCursor] = useState<string | null>(null);
+  const [personalCursor, setPersonalCursor] = useState<{ number: number; createdAt: string } | null>(null);
+  const [publicCursor, setPublicCursor] = useState<{ number: number; createdAt: string } | null>(null);
   const [hasMorePersonal, setHasMorePersonal] = useState(false);
   const [hasMorePublic, setHasMorePublic] = useState(false);
   const [loadingMorePersonal, setLoadingMorePersonal] = useState(false);
   const [loadingMorePublic, setLoadingMorePublic] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isLoading: loading, withLoading, isKeyLoading } = useLoadingState(false);
@@ -63,6 +64,41 @@ export const usePrompts = () => {
     }, 'load-initial');
   }, [user, toast, withLoading]);
 
+  const loadAll = useCallback(async (personalOnly: boolean) => {
+    if (!user || loadingAll) return;
+
+    setLoadingAll(true);
+    try {
+      const allPrompts = await promptService.fetchAllPrompts({
+        personalOnly,
+        userId: user.id,
+      });
+
+      if (personalOnly) {
+        setPersonalPrompts(allPrompts);
+        setHasMorePersonal(false);
+        setPersonalCursor(null);
+      } else {
+        setPublicPrompts(allPrompts);
+        setHasMorePublic(false);
+        setPublicCursor(null);
+      }
+
+      toast({
+        title: "Prompts carregados",
+        description: `${allPrompts.length} prompts carregados com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar todos os prompts',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingAll(false);
+    }
+  }, [user, loadingAll, toast]);
+
   const loadMore = useCallback(async (personalOnly: boolean) => {
     if (!user) return;
 
@@ -77,7 +113,7 @@ export const usePrompts = () => {
         personalOnly,
         userId: user.id,
         limit: 20,
-        cursorCreatedAt: cursor,
+        cursor,
       });
 
       if (personalOnly) {
@@ -262,6 +298,7 @@ export const usePrompts = () => {
       loading,
       loadingMorePersonal,
       loadingMorePublic,
+      loadingAll,
       hasMorePersonal,
       hasMorePublic,
       createPrompt,
@@ -271,6 +308,7 @@ export const usePrompts = () => {
       refetch: fetchPrompts,
       loadInitial,
       loadMore,
+      loadAll,
       fetchPreviewImage,
       getPromptById,
       setPersonalPrompts,
@@ -282,6 +320,7 @@ export const usePrompts = () => {
       loading,
       loadingMorePersonal,
       loadingMorePublic,
+      loadingAll,
       hasMorePersonal,
       hasMorePublic,
       createPrompt,
@@ -291,6 +330,7 @@ export const usePrompts = () => {
       fetchPrompts,
       loadInitial,
       loadMore,
+      loadAll,
       fetchPreviewImage,
       getPromptById,
     ]

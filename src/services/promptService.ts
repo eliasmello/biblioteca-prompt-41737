@@ -23,12 +23,12 @@ export interface FetchPromptsOptions {
   personalOnly?: boolean;
   userId?: string;
   limit?: number;
-  cursorCreatedAt?: string;
+  cursor?: { number: number; createdAt: string } | null;
 }
 
 export interface FetchPromptsPageResult {
   items: Prompt[];
-  nextCursor: string | null;
+  nextCursor: { number: number; createdAt: string } | null;
 }
 
 export interface CreatePromptData {
@@ -84,10 +84,10 @@ export function mapDbPromptToPrompt(dbPrompt: any): Prompt {
 }
 
 /**
- * Fetches a single page of prompts using keyset pagination
+ * Fetches a single page of prompts using keyset pagination with number-based cursor
  */
 export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promise<FetchPromptsPageResult> {
-  const { personalOnly = false, userId, limit = 20, cursorCreatedAt } = options;
+  const { personalOnly = false, userId, limit = 20, cursor } = options;
   
   if (!userId) {
     throw new Error('User ID is required to fetch prompts');
@@ -108,12 +108,12 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
       if (personalOnly) {
         query = query.eq('created_by', userId);
       } else {
-        query = query.eq('is_public', true);
+        query = query.or(`is_public.eq.true,created_by.eq.${userId}`);
       }
 
-      // Apply cursor for pagination
-      if (cursorCreatedAt) {
-        query = query.lt('created_at', cursorCreatedAt);
+      // Apply cursor for pagination using number and created_at
+      if (cursor) {
+        query = query.or(`number.lt.${cursor.number},and(number.eq.${cursor.number},created_at.lt.${cursor.createdAt})`);
       }
 
       const { data, error } = await query;
@@ -130,7 +130,7 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
 
       const items = (data || []).map(mapDbPromptToPrompt);
       const nextCursor = items.length === pageSize && items.length > 0
-        ? items[items.length - 1].createdAt
+        ? { number: items[items.length - 1].number, createdAt: items[items.length - 1].createdAt }
         : null;
 
       return { items, nextCursor };
@@ -146,6 +146,34 @@ export async function fetchPromptsPage(options: FetchPromptsOptions = {}): Promi
   }
 
   return { items: [], nextCursor: null };
+}
+
+/**
+ * Fetch all prompts for a user by iterating through pages
+ */
+export async function fetchAllPrompts(
+  options: Omit<FetchPromptsOptions, 'cursor' | 'limit'> = {}
+): Promise<Prompt[]> {
+  const allPrompts: Prompt[] = [];
+  let cursor: { number: number; createdAt: string } | null = null;
+  let hasMore = true;
+  const maxPages = 100; // Safety limit
+  let pageCount = 0;
+
+  while (hasMore && pageCount < maxPages) {
+    const result = await fetchPromptsPage({
+      ...options,
+      cursor,
+      limit: 100,
+    });
+
+    allPrompts.push(...result.items);
+    cursor = result.nextCursor;
+    hasMore = result.nextCursor !== null;
+    pageCount++;
+  }
+
+  return allPrompts;
 }
 
 /**

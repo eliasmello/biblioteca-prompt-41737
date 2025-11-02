@@ -34,7 +34,8 @@ import {
   Download,
   Upload,
   Settings,
-  Hash
+  Hash,
+  ArrowUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Prompt } from "@/types/prompt";
@@ -51,6 +52,7 @@ export default function Prompts() {
     loading,
     loadingMorePersonal,
     loadingMorePublic,
+    loadingAll,
     hasMorePersonal,
     hasMorePublic,
     createPrompt, 
@@ -60,6 +62,7 @@ export default function Prompts() {
     refetch,
     loadInitial,
     loadMore,
+    loadAll,
     fetchPreviewImage,
     setPersonalPrompts,
     setPublicPrompts
@@ -104,6 +107,7 @@ export default function Prompts() {
   const [minNumber, setMinNumber] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
+  const [goToNumber, setGoToNumber] = useState<string>("");
 
   // Update URL when filter changes
   useEffect(() => {
@@ -478,6 +482,7 @@ export default function Prompts() {
 
             {/* View Mode */}
             <div className="flex items-center border border-border rounded-lg p-1">
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -499,6 +504,80 @@ export default function Prompts() {
                 )}
               >
                 <List className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Navigation controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const personalOnly = activeFilter === 'meus';
+                loadAll(personalOnly);
+              }}
+              disabled={loadingAll}
+              className="w-full"
+            >
+              {loadingAll ? "Carregando..." : "Carregar todos"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                loadInitial();
+              }}
+              className="w-full"
+            >
+              <ArrowUp className="mr-2 h-4 w-4" />
+              Voltar ao topo
+            </Button>
+
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder="Nº do prompt"
+                value={goToNumber}
+                onChange={(e) => setGoToNumber(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const num = parseInt(goToNumber);
+                    if (!isNaN(num) && num > 0) {
+                      const element = document.querySelector(`[data-prompt-number="${num}"]`);
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "center" });
+                      } else {
+                        toast({
+                          title: "Prompt não encontrado",
+                          description: `Prompt #${num} não está visível. Tente carregar todos os prompts primeiro.`,
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button 
+                onClick={() => {
+                  const num = parseInt(goToNumber);
+                  if (!isNaN(num) && num > 0) {
+                    const element = document.querySelector(`[data-prompt-number="${num}"]`);
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth", block: "center" });
+                    } else {
+                      toast({
+                        title: "Prompt não encontrado",
+                        description: `Prompt #${num} não está visível. Tente carregar todos os prompts primeiro.`,
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }} 
+                variant="outline"
+              >
+                Ir
               </Button>
             </div>
           </div>
@@ -554,19 +633,20 @@ export default function Prompts() {
               : "space-y-4"
           )}>
             {filteredPrompts.map((prompt) => (
-              <PromptCard
-                key={prompt.id}
-                prompt={prompt}
-                onPreview={handlePreview}
-                onToggleFavorite={handleToggleFavorite}
-                onCopy={handleCopy}
-                onEdit={undefined}
-                onDelete={undefined}
-                onGenerateImage={handleGenerateImage}
-                isGeneratingImage={generatingImageId === prompt.id}
-                loadPreview={fetchPreviewImage}
-                variant={viewMode}
-              />
+              <div key={prompt.id} data-prompt-number={prompt.number}>
+                <PromptCard
+                  prompt={prompt}
+                  onPreview={handlePreview}
+                  onToggleFavorite={handleToggleFavorite}
+                  onCopy={handleCopy}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onGenerateImage={handleGenerateImage}
+                  isGeneratingImage={generatingImageId === prompt.id}
+                  loadPreview={fetchPreviewImage}
+                  variant={viewMode}
+                />
+              </div>
             ))}
           </div>
 
