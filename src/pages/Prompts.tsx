@@ -913,29 +913,18 @@ export default function Prompts() {
                   {loadingMorePublic ? 'Carregando...' : 'Carregar mais'}
                 </Button>
               )}
-              {activeFilter === 'todos' && (
-                <div className="flex gap-4">
-                  {hasMorePersonal && (
-                    <Button
-                      onClick={() => loadMore(true)}
-                      disabled={loadingMorePersonal}
-                      variant="outline"
-                      size="lg"
-                    >
-                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais (Meus)'}
-                    </Button>
-                  )}
-                  {hasMorePublic && (
-                    <Button
-                      onClick={() => loadMore(false)}
-                      disabled={loadingMorePublic}
-                      variant="outline"
-                      size="lg"
-                    >
-                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais (Públicos)'}
-                    </Button>
-                  )}
-                </div>
+              {activeFilter === 'todos' && (hasMorePersonal || hasMorePublic) && (
+                <Button
+                  onClick={() => {
+                    if (hasMorePersonal) loadMore(true);
+                    if (hasMorePublic) loadMore(false);
+                  }}
+                  disabled={loadingMorePersonal || loadingMorePublic}
+                  variant="outline"
+                  size="lg"
+                >
+                  {(loadingMorePersonal || loadingMorePublic) ? 'Carregando...' : 'Carregar mais'}
+                </Button>
               )}
             </div>
           ) : null}
