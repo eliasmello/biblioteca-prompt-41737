@@ -922,7 +922,7 @@ export default function Prompts() {
                       variant="outline"
                       size="lg"
                     >
-                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais'}
+                      {loadingMorePersonal ? 'Carregando...' : 'Carregar mais (Meus)'}
                     </Button>
                   )}
                   {hasMorePublic && (
@@ -932,7 +932,7 @@ export default function Prompts() {
                       variant="outline"
                       size="lg"
                     >
-                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais'}
+                      {loadingMorePublic ? 'Carregando...' : 'Carregar mais (Públicos)'}
                     </Button>
                   )}
                 </div>
