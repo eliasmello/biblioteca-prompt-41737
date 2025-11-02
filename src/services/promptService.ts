@@ -437,6 +437,40 @@ export async function importPrompts(
 }
 
 /**
+ * Counts prompts with optional filters
+ */
+export async function countPrompts(options: {
+  personalOnly?: boolean;
+  userId?: string;
+  onlyMissingImages?: boolean;
+} = {}): Promise<number> {
+  const { personalOnly = false, userId, onlyMissingImages = false } = options;
+
+  let query = supabase
+    .from('prompts')
+    .select('id', { count: 'exact', head: true });
+
+  if (personalOnly && userId) {
+    query = query.eq('created_by', userId);
+  } else if (!personalOnly) {
+    query = query.eq('is_public', true);
+  }
+
+  if (onlyMissingImages) {
+    query = query.is('preview_image', null);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    console.error('Error counting prompts:', error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+/**
  * Parses import content into individual prompts
  */
 function parseImportContent(content: string): Partial<Prompt>[] {

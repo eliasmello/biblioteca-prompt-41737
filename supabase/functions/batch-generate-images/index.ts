@@ -12,6 +12,17 @@ interface Prompt {
   content: string;
 }
 
+// Normaliza placeholders no conteúdo
+function normalizeContent(content: string): string {
+  return content
+    .replace(/\[city\]/gi, 'a modern city')
+    .replace(/\[xy\]/gi, '1:1')
+    .replace(/\[color\]/gi, 'white')
+    .replace(/\[(\w+)\]/g, 'value')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 function base64ToBlob(base64: string, contentType = 'image/png'): Blob {
   const byteCharacters = atob(base64);
   const byteArrays = [];
@@ -33,45 +44,78 @@ async function generateImage(prompt: Prompt, lovableApiKey: string, supabaseUrl:
   try {
     console.log(`[${prompt.id}] Starting generation for: ${prompt.title}`);
     
-    // Call AI Gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: `Generate an image based on this prompt: ${prompt.content}`,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+    // Normalizar conteúdo antes de enviar ao modelo
+    const normalizedContent = normalizeContent(prompt.content);
+    
+    // Tentar até 3 vezes se não vier imagem
+    const maxRetries = 3;
+    let base64Image: string | undefined;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      let promptText = `Generate an image based on this prompt: ${normalizedContent}`;
+      
+      // Variar o prompt nas tentativas subsequentes
+      if (attempt === 2) {
+        promptText = `Generate a single PNG image based on this prompt. Return only the image: ${normalizedContent}`;
+      } else if (attempt === 3) {
+        promptText = `Create one high-quality image. Respond with an image only. ${normalizedContent}`;
+      }
+      
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: promptText,
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      
-      if (aiResponse.status === 429) {
-        console.error(`[${prompt.id}] Rate limit exceeded`);
-        return { error: 'RATE_LIMIT', status: 429 };
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        
+        if (aiResponse.status === 429) {
+          console.error(`[${prompt.id}] Rate limit exceeded`);
+          return { error: 'RATE_LIMIT', status: 429 };
+        }
+        
+        if (aiResponse.status === 402) {
+          console.error(`[${prompt.id}] Credits exceeded`);
+          return { error: 'NO_CREDITS', status: 402 };
+        }
+        
+        console.error(`[${prompt.id}] AI Gateway error (attempt ${attempt}):`, errorText);
+        if (attempt === maxRetries) {
+          return { error: 'AI_ERROR', status: aiResponse.status };
+        }
+        continue;
       }
-      
-      if (aiResponse.status === 402) {
-        console.error(`[${prompt.id}] Credits exceeded`);
-        return { error: 'NO_CREDITS', status: 402 };
+
+      const aiData = await aiResponse.json();
+      base64Image = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+      if (base64Image) {
+        if (attempt > 1) {
+          console.log(`[${prompt.id}] Success on retry #${attempt}`);
+        }
+        break;
+      } else {
+        console.log(`[${prompt.id}] No image in response (attempt ${attempt}/${maxRetries})`);
+        if (attempt === maxRetries) {
+          console.error(`[${prompt.id}] No image after ${maxRetries} attempts`);
+          return { error: 'NO_IMAGE', status: 500 };
+        }
       }
-      
-      console.error(`[${prompt.id}] AI Gateway error:`, errorText);
-      return { error: 'AI_ERROR', status: aiResponse.status };
     }
-
-    const aiData = await aiResponse.json();
-    const base64Image = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
+    
     if (!base64Image) {
       console.error(`[${prompt.id}] No image in response`);
       return { error: 'NO_IMAGE', status: 500 };

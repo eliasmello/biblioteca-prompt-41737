@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { BatchImageGenerator } from "@/components/prompts/BatchImageGenerator";
+import { countPrompts } from "@/services/promptService";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const { generateImage } = useImageGeneration();
   const { toast } = useToast();
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [missingCount, setMissingCount] = useState(0);
   
   // Use personal prompts on dashboard (user's own prompts)
   const prompts = personalPrompts;
@@ -37,6 +40,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (user) {
       refetch(true); // Fetch personal prompts
+      
+      // Fetch exact counts from database
+      countPrompts({ personalOnly: true, userId: user.id }).then(setTotalCount);
+      countPrompts({ personalOnly: true, userId: user.id, onlyMissingImages: true }).then(setMissingCount);
     }
   }, [user, refetch]);
 
@@ -46,17 +53,15 @@ export default function Dashboard() {
     canonicalPath: "/dashboard",
   });
 
-  const totalPrompts = prompts.length;
   const categoriesSet = new Set((prompts || []).map(p => p.category).filter(Boolean));
   const categoriesCount = categoriesSet.size;
   const favoritesCount = (prompts || []).filter(p => p.isFavorite).length;
   const totalUsage = (prompts || []).reduce((sum, p) => sum + (p.usageCount || 0), 0);
-  const missingImagesCount = (prompts || []).filter(p => !p.previewImage && !p.preview_image).length;
 
   const stats = useMemo(() => ([
     {
       title: "Total de Prompts",
-      value: String(totalPrompts),
+      value: String(totalCount),
       change: "",
       icon: FileText,
       color: "text-primary",
@@ -80,13 +85,13 @@ export default function Dashboard() {
     },
     {
       title: "Imagens Faltantes",
-      value: String(missingImagesCount),
+      value: String(missingCount),
       change: "",
       icon: ImageOff,
       color: "text-warning",
       bgColor: "bg-warning/10"
     }
-  ]), [totalPrompts, categoriesCount, favoritesCount, missingImagesCount]);
+  ]), [totalCount, categoriesCount, favoritesCount, missingCount]);
 
   const recentPrompts = useMemo(() => {
     return [...prompts]
@@ -316,9 +321,12 @@ export default function Dashboard() {
               Importar Prompts
             </Button>
             <BatchImageGenerator 
-              missingImagesCount={missingImagesCount}
+              missingImagesCount={missingCount}
               onComplete={async () => {
                 await refetch(true);
+                if (user) {
+                  countPrompts({ personalOnly: true, userId: user.id, onlyMissingImages: true }).then(setMissingCount);
+                }
               }}
             />
           </div>
