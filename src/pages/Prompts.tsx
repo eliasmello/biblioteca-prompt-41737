@@ -18,6 +18,7 @@ import PromptCardSkeleton from "@/components/prompts/PromptCardSkeleton";
 import { PromptPreviewModal } from "@/components/prompts/PromptPreviewModal";
 import ImportDialog from "@/components/prompts/ImportDialog";
 import ExportDialog from "@/components/prompts/ExportDialog";
+import { BatchImageGenerator } from "@/components/prompts/BatchImageGenerator";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -368,6 +369,13 @@ export default function Prompts() {
                 Categorias
               </Button>
               <ImportDialog onImport={handleImport} isImporting={isImporting} />
+              <BatchImageGenerator 
+                missingImagesCount={allPrompts.filter(p => !p.previewImage && !p.preview_image).length}
+                onComplete={async () => {
+                  await refetch(true);
+                  await refetch(false);
+                }}
+              />
             </>
           )}
           <ExportDialog prompts={filteredPrompts} defaultFilename="prompts">

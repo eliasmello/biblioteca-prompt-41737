@@ -2,3 +2,6 @@ project_id = "kxdddtkuicnwrkbjklsd"
 
 [functions.generate-prompt-image]
 verify_jwt = true
+
+[functions.batch-generate-images]
+verify_jwt = true

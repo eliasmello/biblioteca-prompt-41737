@@ -17,9 +17,11 @@ import {
   Sparkles,
   Activity,
   Users,
-  Target
+  Target,
+  ImageOff
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { BatchImageGenerator } from "@/components/prompts/BatchImageGenerator";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -49,6 +51,7 @@ export default function Dashboard() {
   const categoriesCount = categoriesSet.size;
   const favoritesCount = (prompts || []).filter(p => p.isFavorite).length;
   const totalUsage = (prompts || []).reduce((sum, p) => sum + (p.usageCount || 0), 0);
+  const missingImagesCount = (prompts || []).filter(p => !p.previewImage && !p.preview_image).length;
 
   const stats = useMemo(() => ([
     {
@@ -76,14 +79,14 @@ export default function Dashboard() {
       bgColor: "bg-favorite/10"
     },
     {
-      title: "Total de Usos",
-      value: String(totalUsage),
+      title: "Imagens Faltantes",
+      value: String(missingImagesCount),
       change: "",
-      icon: TrendingUp,
-      color: "text-success",
-      bgColor: "bg-success/10"
+      icon: ImageOff,
+      color: "text-warning",
+      bgColor: "bg-warning/10"
     }
-  ]), [totalPrompts, categoriesCount, favoritesCount, totalUsage]);
+  ]), [totalPrompts, categoriesCount, favoritesCount, missingImagesCount]);
 
   const recentPrompts = useMemo(() => {
     return [...prompts]
@@ -299,7 +302,7 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Button variant="outline" className="h-20 flex-col gap-2" onClick={() => navigate('/prompts/new')}>
               <Plus className="w-6 h-6" />
               Criar Novo Prompt
@@ -312,6 +315,22 @@ export default function Dashboard() {
               <FileText className="w-6 h-6" />
               Importar Prompts
             </Button>
+            <div className="relative">
+              <BatchImageGenerator 
+                missingImagesCount={missingImagesCount}
+                onComplete={async () => {
+                  await refetch(true);
+                }}
+              />
+              {missingImagesCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 px-2"
+                >
+                  {missingImagesCount}
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
