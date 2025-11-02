@@ -55,7 +55,14 @@ export const LazyImage = ({
 
   // Load image when in view
   useEffect(() => {
-    if (!isInView || !src) return;
+    if (!isInView) return;
+    
+    // Se não há src, usa fallback
+    if (!src) {
+      setCurrentSrc(fallback);
+      setIsLoaded(true);
+      return;
+    }
 
     // Start with thumbnail or full source
     const imageSrc = src;
