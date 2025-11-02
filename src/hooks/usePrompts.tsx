@@ -32,22 +32,24 @@ export const usePrompts = () => {
         setPersonalCursor(null);
         setPublicCursor(null);
 
-        // Load first page of personal prompts
-        const personalResult = await promptService.fetchPromptsPage({
-          personalOnly: true,
-          userId: user.id,
-          limit: 20,
-        });
+        // Carregar páginas em PARALELO (muito mais rápido)
+        const [personalResult, publicResult] = await Promise.all([
+          promptService.fetchPromptsPage({
+            personalOnly: true,
+            userId: user.id,
+            limit: 20,
+          }),
+          promptService.fetchPromptsPage({
+            personalOnly: false,
+            userId: user.id,
+            limit: 20,
+          }),
+        ]);
+
         setPersonalPrompts(personalResult.items);
         setPersonalCursor(personalResult.nextCursor);
         setHasMorePersonal(!!personalResult.nextCursor);
 
-        // Load first page of public prompts
-        const publicResult = await promptService.fetchPromptsPage({
-          personalOnly: false,
-          userId: user.id,
-          limit: 20,
-        });
         setPublicPrompts(publicResult.items);
         setPublicCursor(publicResult.nextCursor);
         setHasMorePublic(!!publicResult.nextCursor);
