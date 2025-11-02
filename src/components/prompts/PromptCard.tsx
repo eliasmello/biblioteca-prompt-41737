@@ -92,7 +92,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                 variant="secondary"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onGenerateImage(prompt.id, cleanPromptContent(prompt.content));
+                  onGenerateImage(prompt.id, cleanPromptContent(prompt.content || ''));
                 }}
                 disabled={isGeneratingImage}
                 className="w-8 h-8 p-0"
@@ -186,11 +186,11 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onGenerateImage(prompt.id, cleanPromptContent(prompt.content));
-                      }}
-                      disabled={isGeneratingImage}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGenerateImage(prompt.id, cleanPromptContent(prompt.content || ''));
+                }}
+                disabled={isGeneratingImage}
                       className="w-8 h-8 p-0"
                       title="Gerar imagem com IA"
                     >

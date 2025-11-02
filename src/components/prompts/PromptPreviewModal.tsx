@@ -177,7 +177,7 @@ export function PromptPreviewModal({
                 </div>
               ) : (
                 <div className="prompt-highlight whitespace-pre-wrap">
-                  {cleanPromptContent(displayPrompt.content)}
+                  {cleanPromptContent(displayPrompt.content) || 'Sem conteúdo disponível'}
                 </div>
               )}
             </div>

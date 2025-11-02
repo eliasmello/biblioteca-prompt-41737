@@ -202,7 +202,18 @@ export default function Prompts() {
   };
 
   const handleGenerateImage = async (id: string, content: string) => {
-    if (!content.trim()) {
+    // Debug logs
+    console.log(`🔍 [DEBUG] Gerando imagem para prompt ID: ${id}`);
+    console.log(`📝 [DEBUG] Content length: ${content?.length || 0}`);
+    console.log(`📝 [DEBUG] Content preview: ${content?.substring(0, 100) || 'VAZIO'}`);
+    
+    if (!content || !content.trim()) {
+      console.error(`❌ [ERROR] Content vazio para prompt ${id}`);
+      
+      // Buscar o prompt completo do estado
+      const fullPrompt = allPrompts.find(p => p.id === id);
+      console.log(`📋 [DEBUG] Prompt completo:`, fullPrompt);
+      
       toast({
         title: "Conteúdo vazio",
         description: "O prompt precisa ter conteúdo para gerar uma imagem.",
