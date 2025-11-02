@@ -315,22 +315,12 @@ export default function Dashboard() {
               <FileText className="w-6 h-6" />
               Importar Prompts
             </Button>
-            <div className="relative">
-              <BatchImageGenerator 
-                missingImagesCount={missingImagesCount}
-                onComplete={async () => {
-                  await refetch(true);
-                }}
-              />
-              {missingImagesCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 px-2"
-                >
-                  {missingImagesCount}
-                </Badge>
-              )}
-            </div>
+            <BatchImageGenerator 
+              missingImagesCount={missingImagesCount}
+              onComplete={async () => {
+                await refetch(true);
+              }}
+            />
           </div>
         </CardContent>
       </Card>

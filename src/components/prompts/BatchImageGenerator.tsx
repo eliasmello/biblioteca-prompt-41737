@@ -73,10 +73,10 @@ export const BatchImageGenerator = ({ missingImagesCount, onComplete }: BatchIma
   return (
     <>
       <Button
-        variant="gradient"
+        variant="default"
         onClick={handleStart}
         disabled={isLoading}
-        className="gap-2"
+        className="gap-2 bg-gradient-primary hover:opacity-90 transition-opacity"
       >
         <Sparkles className="w-4 h-4" />
         Gerar Imagens Faltantes
