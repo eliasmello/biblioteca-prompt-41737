@@ -322,16 +322,24 @@ export default function Prompts() {
   }, [allPrompts, sortBy]);
 
   const filteredPrompts = useMemo(() => {
+    // Função auxiliar para buscar por palavras completas
+    const searchByWords = (text: string, query: string): boolean => {
+      if (!text || !query) return false;
+      const words = text.toLowerCase().split(/\s+/);
+      const q = query.toLowerCase();
+      return words.some(word => word.startsWith(q) || word.includes(q));
+    };
+
     const filtered = sortedPrompts.filter(prompt => {
       const q = debouncedSearchQuery.toLowerCase();
       const matchesSearch = debouncedSearchQuery === '' || 
-                           prompt.title.toLowerCase().includes(q) ||
-                           prompt.content.toLowerCase().includes(q) ||
-                           (prompt.category && prompt.category.toLowerCase().includes(q)) ||
-                           (prompt.tags && prompt.tags.some(t => t.toLowerCase().includes(q))) ||
-                           (prompt.keywords && prompt.keywords.some(t => t.toLowerCase().includes(q))) ||
-                           (prompt.styleTags && prompt.styleTags.some(t => t.toLowerCase().includes(q))) ||
-                           (prompt.subjectTags && prompt.subjectTags.some(t => t.toLowerCase().includes(q)));
+                           searchByWords(prompt.title, q) ||
+                           searchByWords(prompt.content, q) ||
+                           (prompt.category && searchByWords(prompt.category, q)) ||
+                           (prompt.tags && prompt.tags.some(t => searchByWords(t, q))) ||
+                           (prompt.keywords && prompt.keywords.some(t => searchByWords(t, q))) ||
+                           (prompt.styleTags && prompt.styleTags.some(t => searchByWords(t, q))) ||
+                           (prompt.subjectTags && prompt.subjectTags.some(t => searchByWords(t, q)));
       
       const matchesCategory = selectedCategory === 'all' || 
                              (prompt.category && prompt.category.toLowerCase() === selectedCategory);
