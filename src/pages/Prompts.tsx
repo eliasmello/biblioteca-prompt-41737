@@ -354,19 +354,22 @@ export default function Prompts() {
     // Função auxiliar para buscar por início de palavra com fuzzy
     const searchByWords = (text: string, query: string): boolean => {
       if (!text || !query) return false;
-      const words = text.toLowerCase().split(/\s+/);
-      const q = query.toLowerCase();
+      const textWords = text.toLowerCase().split(/\s+/);
+      const queryWords = query.toLowerCase().trim().split(/\s+/);
       
-      // Primeiro tenta match exato por início de palavra
-      const exactMatch = words.some(word => word.startsWith(q));
-      if (exactMatch) return true;
-      
-      // Se não encontrar exato, tenta fuzzy (tolera até 2 caracteres de diferença)
-      const maxDistance = Math.min(2, Math.floor(q.length / 3));
-      return words.some(word => {
-        // Só compara com palavras de tamanho similar
-        if (Math.abs(word.length - q.length) > maxDistance) return false;
-        return levenshteinDistance(word, q) <= maxDistance;
+      // Cada palavra da query precisa ter match no texto
+      return queryWords.every(queryWord => {
+        // Primeiro tenta match exato por início de palavra
+        const exactMatch = textWords.some(textWord => textWord.startsWith(queryWord));
+        if (exactMatch) return true;
+        
+        // Se não encontrar exato, tenta fuzzy (tolera até 2 caracteres de diferença)
+        const maxDistance = Math.min(2, Math.floor(queryWord.length / 3));
+        return textWords.some(textWord => {
+          // Só compara com palavras de tamanho similar
+          if (Math.abs(textWord.length - queryWord.length) > maxDistance) return false;
+          return levenshteinDistance(textWord, queryWord) <= maxDistance;
+        });
       });
     };
 
