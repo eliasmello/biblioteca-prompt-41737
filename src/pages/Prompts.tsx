@@ -35,11 +35,13 @@ import {
   Upload,
   Settings,
   Hash,
-  ArrowUp
+  ArrowUp,
+  Shuffle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Prompt } from "@/types/prompt";
 import { useDebounce } from "@/hooks/useDebounce";
+import { SORT_OPTIONS } from "@/constants/prompts";
 
 export default function Prompts() {
   const navigate = useNavigate();
@@ -108,17 +110,12 @@ export default function Prompts() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState(() => {
-    try {
-      return localStorage.getItem('prompts.sortBy') || 'random';
-    } catch {
-      return 'random';
-    }
-  });
+  const [sortBy, setSortBy] = useState<'random' | 'newest' | 'oldest' | 'title' | 'category' | 'usage' | 'favorites' | 'numberAsc' | 'numberDesc'>('random');
   const [minNumber, setMinNumber] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const [goToNumber, setGoToNumber] = useState<string>("");
+  const [shuffleKey, setShuffleKey] = useState(0);
 
   // Update URL when filter changes
   useEffect(() => {
@@ -129,11 +126,10 @@ export default function Prompts() {
     }
   }, [activeFilter, setSearchParams]);
 
+  // Força embaralhamento inicial ao montar
   useEffect(() => {
-    try {
-      localStorage.setItem('prompts.sortBy', sortBy);
-    } catch {}
-  }, [sortBy]);
+    setShuffleKey(k => k + 1);
+  }, []);
 
   useSEO({
     title: "Prompts de IA - Biblioteca do Sistema",
@@ -331,12 +327,11 @@ export default function Prompts() {
           if (bNum == null) return -1;
           return bNum - aNum;
         }
-        case 'recent':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
-  }, [allPrompts, sortBy]);
+  }, [allPrompts, sortBy, shuffleKey]);
 
   const filteredPrompts = useMemo(() => {
     // Calcula distância de Levenshtein para busca fuzzy
@@ -552,20 +547,36 @@ export default function Prompts() {
             </div>
 
             {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
               <SelectTrigger className="w-[150px]">
                 <SortAsc className="w-4 h-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Mais Recentes</SelectItem>
-                <SelectItem value="popular">Mais Usados</SelectItem>
-                <SelectItem value="alphabetical">Alfabética</SelectItem>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
                 <SelectItem value="numberAsc">Numeração (crescente)</SelectItem>
                 <SelectItem value="numberDesc">Numeração (decrescente)</SelectItem>
                 <SelectItem value="favorites">Favoritos</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Shuffle Button */}
+            {sortBy === 'random' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShuffleKey(k => k + 1)}
+                className="gap-2"
+                title="Embaralhar ordem"
+              >
+                <Shuffle className="w-4 h-4" />
+                Embaralhar
+              </Button>
+            )}
 
             {/* View Mode */}
             <div className="flex items-center border border-border rounded-lg p-1">
