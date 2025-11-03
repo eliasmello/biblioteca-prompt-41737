@@ -95,6 +95,10 @@
     /* Toast/Alert Dark Background */
     --toast-dark: 60 3% 15%;
     --toast-dark-foreground: 0 0% 95%;
+
+    /* Category Badge */
+    --category-badge: 60 2% 64%;
+    --category-badge-foreground: 240 10% 8%;
   }
 
   .dark {
@@ -173,6 +177,10 @@
     /* Toast/Alert Dark Background */
     --toast-dark: 60 3% 15%;
     --toast-dark-foreground: 0 0% 95%;
+
+    /* Category Badge */
+    --category-badge: 60 2% 64%;
+    --category-badge-foreground: 240 10% 4%;
   }
 }
 

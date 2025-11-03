@@ -149,7 +149,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                         #{prompt.number}
                       </Badge>
                     )}
-                    <Badge className="bg-primary text-primary-foreground text-xs">
+                    <Badge className="bg-[hsl(var(--category-badge))] text-[hsl(var(--category-badge-foreground))] text-xs">
                       {toTitleCase(prompt.category)}
                     </Badge>
                     {prompt.subcategory && (
@@ -241,7 +241,7 @@ function PromptCardComponent({ prompt, onPreview, onToggleFavorite, onCopy, onEd
                     #{prompt.number}
                   </Badge>
                 )}
-                <Badge className="bg-primary text-primary-foreground text-xs">
+                <Badge className="bg-[hsl(var(--category-badge))] text-[hsl(var(--category-badge-foreground))] text-xs">
                   {toTitleCase(prompt.category)}
                 </Badge>
                 {prompt.subcategory && (
