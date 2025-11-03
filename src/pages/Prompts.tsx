@@ -322,12 +322,52 @@ export default function Prompts() {
   }, [allPrompts, sortBy]);
 
   const filteredPrompts = useMemo(() => {
-    // Função auxiliar para buscar por palavras completas
+    // Calcula distância de Levenshtein para busca fuzzy
+    const levenshteinDistance = (str1: string, str2: string): number => {
+      const matrix: number[][] = [];
+      
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+      }
+      
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+      }
+      
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      
+      return matrix[str2.length][str1.length];
+    };
+
+    // Função auxiliar para buscar por início de palavra com fuzzy
     const searchByWords = (text: string, query: string): boolean => {
       if (!text || !query) return false;
       const words = text.toLowerCase().split(/\s+/);
       const q = query.toLowerCase();
-      return words.some(word => word.startsWith(q) || word.includes(q));
+      
+      // Primeiro tenta match exato por início de palavra
+      const exactMatch = words.some(word => word.startsWith(q));
+      if (exactMatch) return true;
+      
+      // Se não encontrar exato, tenta fuzzy (tolera até 2 caracteres de diferença)
+      const maxDistance = Math.min(2, Math.floor(q.length / 3));
+      return words.some(word => {
+        // Só compara com palavras de tamanho similar
+        if (Math.abs(word.length - q.length) > maxDistance) return false;
+        return levenshteinDistance(word, q) <= maxDistance;
+      });
     };
 
     const filtered = sortedPrompts.filter(prompt => {
