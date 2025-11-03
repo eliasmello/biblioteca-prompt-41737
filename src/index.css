@@ -97,7 +97,7 @@
     --toast-dark-foreground: 0 0% 95%;
 
     /* Category Badge */
-    --category-badge: 60 2% 64%;
+    --category-badge: 60 1% 72%;
     --category-badge-foreground: 240 10% 8%;
   }
 
@@ -179,7 +179,7 @@
     --toast-dark-foreground: 0 0% 95%;
 
     /* Category Badge */
-    --category-badge: 60 2% 64%;
+    --category-badge: 60 1% 72%;
     --category-badge-foreground: 240 10% 4%;
   }
 }
