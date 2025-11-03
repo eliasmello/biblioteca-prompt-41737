@@ -290,13 +290,19 @@ export default function Prompts() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const sortedPrompts = useMemo(() => {
-    return [...allPrompts].sort((a, b) => {
+    const sorted = [...allPrompts];
+    
+    if (sortBy === 'random') {
+      // Shuffle aleatório usando algoritmo Fisher-Yates
+      for (let i = sorted.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+      }
+      return sorted;
+    }
+    
+    return sorted.sort((a, b) => {
       switch (sortBy) {
-        case 'random':
-          // Cria um hash determinístico mas aparentemente aleatório baseado nos IDs
-          const hashA = a.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const hashB = b.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          return hashA - hashB;
         case 'newest':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'oldest':
