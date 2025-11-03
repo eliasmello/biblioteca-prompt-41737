@@ -91,6 +91,10 @@
     --sidebar-accent-foreground: 240 6% 25%;
     --sidebar-border: 240 6% 88%;
     --sidebar-ring: 245 70% 55%;
+
+    /* Modal/Dialog Dark Background */
+    --modal-dark: 40 6% 8%;
+    --modal-dark-foreground: 0 0% 95%;
   }
 
   .dark {
@@ -165,6 +169,10 @@
     --sidebar-accent-foreground: 240 5% 85%;
     --sidebar-border: 240 4% 12%;
     --sidebar-ring: 245 75% 65%;
+
+    /* Modal/Dialog Dark Background */
+    --modal-dark: 40 6% 8%;
+    --modal-dark-foreground: 0 0% 95%;
   }
 }
 
