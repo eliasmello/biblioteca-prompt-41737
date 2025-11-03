@@ -34,6 +34,7 @@ export const PROMPT_CATEGORIES = [
 ] as const;
 
 export const SORT_OPTIONS = [
+  { value: 'random', label: 'Aleatório' },
   { value: 'newest', label: 'Mais Recentes' },
   { value: 'oldest', label: 'Mais Antigos' },
   { value: 'title', label: 'Título (A-Z)' },

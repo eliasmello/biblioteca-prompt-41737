@@ -110,9 +110,9 @@ export default function Prompts() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState(() => {
     try {
-      return localStorage.getItem('prompts.sortBy') || 'numberAsc';
+      return localStorage.getItem('prompts.sortBy') || 'random';
     } catch {
-      return 'numberAsc';
+      return 'random';
     }
   });
   const [minNumber, setMinNumber] = useState<string>('');
@@ -292,10 +292,21 @@ export default function Prompts() {
   const sortedPrompts = useMemo(() => {
     return [...allPrompts].sort((a, b) => {
       switch (sortBy) {
-        case 'popular':
-          return (b.usageCount || 0) - (a.usageCount || 0);
-        case 'alphabetical':
+        case 'random':
+          // Cria um hash determinístico mas aparentemente aleatório baseado nos IDs
+          const hashA = a.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const hashB = b.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          return hashA - hashB;
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'title':
           return a.title.localeCompare(b.title);
+        case 'category':
+          return (a.category || '').localeCompare(b.category || '');
+        case 'usage':
+          return (b.usageCount || 0) - (a.usageCount || 0);
         case 'favorites':
           return (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
         case 'numberAsc': {
