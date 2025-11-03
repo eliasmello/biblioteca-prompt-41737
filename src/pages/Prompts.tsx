@@ -131,6 +131,33 @@ export default function Prompts() {
     setShuffleKey(k => k + 1);
   }, []);
 
+  // Carrega todos os prompts automaticamente quando sortBy for 'random'
+  useEffect(() => {
+    if (sortBy !== 'random' || !user || loadingAll) return;
+
+    const loadAllPromptsForShuffle = async () => {
+      const needsPersonal = (activeFilter === 'todos' || activeFilter === 'meus' || activeFilter === 'favoritos') && hasMorePersonal;
+      const needsPublic = (activeFilter === 'todos' || activeFilter === 'publicos' || activeFilter === 'favoritos') && hasMorePublic;
+
+      if (!needsPersonal && !needsPublic) return;
+
+      try {
+        if (needsPersonal) {
+          await loadAll(true);
+        }
+        if (needsPublic) {
+          await loadAll(false);
+        }
+        // Força re-embaralhamento após carregar tudo
+        setShuffleKey(k => k + 1);
+      } catch (error) {
+        console.error('Erro ao carregar todos os prompts:', error);
+      }
+    };
+
+    loadAllPromptsForShuffle();
+  }, [user, sortBy, activeFilter, hasMorePersonal, hasMorePublic, loadingAll, loadAll]);
+
   useSEO({
     title: "Prompts de IA - Biblioteca do Sistema",
     description: "Explore nossa biblioteca de prompts de IA organizados por categoria. Prompts oficiais do sistema para arte, negócios, desenvolvimento e muito mais."
