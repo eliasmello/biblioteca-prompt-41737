@@ -83,11 +83,6 @@ export const usePrompts = () => {
         setHasMorePublic(false);
         setPublicCursor(null);
       }
-
-      toast({
-        title: "Prompts carregados",
-        description: `${allPrompts.length} prompts carregados com sucesso.`,
-      });
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar todos os prompts',
