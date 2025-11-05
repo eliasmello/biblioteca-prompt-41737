@@ -361,74 +361,90 @@ export default function Prompts() {
   }, [allPrompts, sortBy, shuffleKey]);
 
   const filteredPrompts = useMemo(() => {
-    // Calcula distância de Levenshtein para busca fuzzy
-    const levenshteinDistance = (str1: string, str2: string): number => {
-      const matrix: number[][] = [];
+    const filtered = sortedPrompts.filter(prompt => {
+      // Se não há busca, aplicar apenas filtros de categoria e número mínimo
+      if (!debouncedSearchQuery) {
+        const matchesCategory = selectedCategory === 'all' || 
+                               (prompt.category && prompt.category.toLowerCase() === selectedCategory);
+        const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
+        return matchesCategory && matchesMinNumber;
+      }
+
+      const query = debouncedSearchQuery.toLowerCase().trim();
+      const queryWords = query.split(/\s+/);
       
-      for (let i = 0; i <= str2.length; i++) {
-        matrix[i] = [i];
+      // Sistema de pontuação para relevância
+      let score = 0;
+      
+      // Match exato na categoria (peso 100) - MAIOR PRIORIDADE
+      if (prompt.category && prompt.category.toLowerCase() === query) {
+        score += 100;
+      }
+      // Match parcial na categoria (peso 80)
+      else if (prompt.category && prompt.category.toLowerCase().includes(query)) {
+        score += 80;
       }
       
-      for (let j = 0; j <= str1.length; j++) {
-        matrix[0][j] = j;
+      // Match exato no título (peso 60)
+      if (prompt.title && prompt.title.toLowerCase() === query) {
+        score += 60;
+      }
+      // Match parcial no título (peso 40)
+      else if (prompt.title && prompt.title.toLowerCase().includes(query)) {
+        score += 40;
       }
       
-      for (let i = 1; i <= str2.length; i++) {
-        for (let j = 1; j <= str1.length; j++) {
-          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-            matrix[i][j] = matrix[i - 1][j - 1];
-          } else {
-            matrix[i][j] = Math.min(
-              matrix[i - 1][j - 1] + 1,
-              matrix[i][j - 1] + 1,
-              matrix[i - 1][j] + 1
-            );
-          }
+      // Match em tags específicas (peso 50)
+      const allTags = [
+        ...(prompt.tags || []),
+        ...(prompt.keywords || []),
+        ...(prompt.styleTags || []),
+        ...(prompt.subjectTags || [])
+      ];
+      
+      const hasExactTagMatch = allTags.some(tag => 
+        tag && tag.toLowerCase() === query
+      );
+      if (hasExactTagMatch) {
+        score += 50;
+      }
+      
+      const hasPartialTagMatch = allTags.some(tag => 
+        tag && tag.toLowerCase().includes(query)
+      );
+      if (hasPartialTagMatch && !hasExactTagMatch) {
+        score += 30;
+      }
+      
+      // Match no conteúdo (peso 20) - MENOR PRIORIDADE
+      if (prompt.content && prompt.content.toLowerCase().includes(query)) {
+        score += 20;
+      }
+      
+      // Match de múltiplas palavras (todas devem estar presentes)
+      if (queryWords.length > 1) {
+        const allWordsMatch = queryWords.every(word => {
+          const wordLower = word.toLowerCase();
+          return (
+            (prompt.title && prompt.title.toLowerCase().includes(wordLower)) ||
+            (prompt.category && prompt.category.toLowerCase().includes(wordLower)) ||
+            (prompt.content && prompt.content.toLowerCase().includes(wordLower)) ||
+            allTags.some(tag => tag && tag.toLowerCase().includes(wordLower))
+          );
+        });
+        
+        if (allWordsMatch) {
+          score += 15;
         }
       }
       
-      return matrix[str2.length][str1.length];
-    };
-
-    // Função auxiliar para buscar por início de palavra com fuzzy
-    const searchByWords = (text: string, query: string): boolean => {
-      if (!text || !query) return false;
-      const textWords = text.toLowerCase().split(/\s+/);
-      const queryWords = query.toLowerCase().trim().split(/\s+/);
-      
-      // Cada palavra da query precisa ter match no texto
-      return queryWords.every(queryWord => {
-        // Primeiro tenta match exato por início de palavra
-        const exactMatch = textWords.some(textWord => textWord.startsWith(queryWord));
-        if (exactMatch) return true;
-        
-        // Se não encontrar exato, tenta fuzzy (tolera até 2 caracteres de diferença)
-        const maxDistance = Math.min(2, Math.floor(queryWord.length / 3));
-        return textWords.some(textWord => {
-          // Só compara com palavras de tamanho similar
-          if (Math.abs(textWord.length - queryWord.length) > maxDistance) return false;
-          return levenshteinDistance(textWord, queryWord) <= maxDistance;
-        });
-      });
-    };
-
-    const filtered = sortedPrompts.filter(prompt => {
-      const q = debouncedSearchQuery.toLowerCase();
-      const matchesSearch = debouncedSearchQuery === '' || 
-                           searchByWords(prompt.title, q) ||
-                           searchByWords(prompt.content, q) ||
-                           (prompt.category && searchByWords(prompt.category, q)) ||
-                           (prompt.tags && prompt.tags.some(t => searchByWords(t, q))) ||
-                           (prompt.keywords && prompt.keywords.some(t => searchByWords(t, q))) ||
-                           (prompt.styleTags && prompt.styleTags.some(t => searchByWords(t, q))) ||
-                           (prompt.subjectTags && prompt.subjectTags.some(t => searchByWords(t, q)));
-      
+      // Aplicar outros filtros
       const matchesCategory = selectedCategory === 'all' || 
                              (prompt.category && prompt.category.toLowerCase() === selectedCategory);
-
       const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
-  
-      return matchesSearch && matchesCategory && matchesMinNumber;
+      
+      // Só retorna se tiver score > 0 e passar nos outros filtros
+      return score > 0 && matchesCategory && matchesMinNumber;
     });
     
     // Deduplicação defensiva final por ID
