@@ -361,91 +361,155 @@ export default function Prompts() {
   }, [allPrompts, sortBy, shuffleKey]);
 
   const filteredPrompts = useMemo(() => {
-    const filtered = sortedPrompts.filter(prompt => {
-      // Se não há busca, aplicar apenas filtros de categoria e número mínimo
-      if (!debouncedSearchQuery) {
+    // Padrões de negação em português e inglês
+    const negationPatterns = [
+      /\bsem\s+/i,        // "sem pessoas", "sem fundo"
+      /\bwithout\s+/i,    // "without people"
+      /\bno\s+/i,         // "no people", "no background"
+      /\bnão\s+/i,        // "não inclui"
+      /\bexcluir\s+/i,    // "excluir pessoas"
+    ];
+    
+    const filtered = sortedPrompts
+      .map(prompt => {
+        // Se não há busca, aplicar apenas filtros de categoria e número mínimo
+        if (!debouncedSearchQuery) {
+          const matchesCategory = selectedCategory === 'all' || 
+                                 (prompt.category && prompt.category.toLowerCase() === selectedCategory);
+          const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
+          return { prompt, score: matchesCategory && matchesMinNumber ? 1 : 0 };
+        }
+
+        const query = debouncedSearchQuery.toLowerCase().trim();
+        const queryWords = query.split(/\s+/);
+        
+        // Sistema de pontuação para relevância
+        let score = 0;
+        
+        // VERIFICAR NEGAÇÕES NO CONTEÚDO
+        const contentLower = (prompt.content || '').toLowerCase();
+        const hasNegation = negationPatterns.some(pattern => {
+          const match = contentLower.match(pattern);
+          if (match) {
+            // Verifica se a negação está relacionada ao termo de busca
+            const afterNegation = contentLower.substring(match.index! + match[0].length, match.index! + match[0].length + 50);
+            return queryWords.some(word => afterNegation.includes(word));
+          }
+          return false;
+        });
+        
+        // Se detectou negação do termo buscado, score = 0
+        if (hasNegation) {
+          return { prompt, score: 0 };
+        }
+        
+        // Match exato na categoria (peso 100) - MAIOR PRIORIDADE
+        if (prompt.category && prompt.category.toLowerCase() === query) {
+          score += 100;
+        }
+        // Match parcial na categoria (peso 70 - reduzido)
+        else if (prompt.category && prompt.category.toLowerCase().includes(query)) {
+          score += 70;
+        }
+        
+        // Match exato na subcategoria (peso 90) - NOVO
+        if (prompt.subcategory && prompt.subcategory.toLowerCase() === query) {
+          score += 90;
+        }
+        // Match parcial na subcategoria (peso 65)
+        else if (prompt.subcategory && prompt.subcategory.toLowerCase().includes(query)) {
+          score += 65;
+        }
+        
+        // Match em subject tags (peso 80 - ALTA PRIORIDADE)
+        const subjectTags = prompt.subjectTags || [];
+        const hasExactSubjectMatch = subjectTags.some(tag => 
+          tag && tag.toLowerCase() === query
+        );
+        if (hasExactSubjectMatch) {
+          score += 80;
+        }
+        const hasPartialSubjectMatch = subjectTags.some(tag => 
+          tag && tag.toLowerCase().includes(query)
+        );
+        if (hasPartialSubjectMatch && !hasExactSubjectMatch) {
+          score += 60;
+        }
+        
+        // Match exato no título (peso 60)
+        if (prompt.title && prompt.title.toLowerCase() === query) {
+          score += 60;
+        }
+        // Match parcial no título (peso 40)
+        else if (prompt.title && prompt.title.toLowerCase().includes(query)) {
+          score += 40;
+        }
+        
+        // Match em outras tags (peso 50)
+        const otherTags = [
+          ...(prompt.tags || []),
+          ...(prompt.keywords || []),
+          ...(prompt.styleTags || [])
+        ];
+        
+        const hasExactTagMatch = otherTags.some(tag => 
+          tag && tag.toLowerCase() === query
+        );
+        if (hasExactTagMatch) {
+          score += 50;
+        }
+        
+        const hasPartialTagMatch = otherTags.some(tag => 
+          tag && tag.toLowerCase().includes(query)
+        );
+        if (hasPartialTagMatch && !hasExactTagMatch) {
+          score += 30;
+        }
+        
+        // Match no conteúdo (peso 5 - DRASTICAMENTE REDUZIDO)
+        // Só conta se não for negação
+        if (contentLower.includes(query)) {
+          score += 5;
+        }
+        
+        // Match de múltiplas palavras (todas devem estar presentes)
+        if (queryWords.length > 1) {
+          const allTags = [...subjectTags, ...otherTags];
+          const allWordsMatch = queryWords.every(word => {
+            const wordLower = word.toLowerCase();
+            return (
+              (prompt.title && prompt.title.toLowerCase().includes(wordLower)) ||
+              (prompt.category && prompt.category.toLowerCase().includes(wordLower)) ||
+              (prompt.subcategory && prompt.subcategory.toLowerCase().includes(wordLower)) ||
+              allTags.some(tag => tag && tag.toLowerCase().includes(wordLower))
+            );
+          });
+          
+          if (allWordsMatch) {
+            score += 15;
+          }
+        }
+        
+        // Aplicar outros filtros
         const matchesCategory = selectedCategory === 'all' || 
                                (prompt.category && prompt.category.toLowerCase() === selectedCategory);
         const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
-        return matchesCategory && matchesMinNumber;
-      }
-
-      const query = debouncedSearchQuery.toLowerCase().trim();
-      const queryWords = query.split(/\s+/);
-      
-      // Sistema de pontuação para relevância
-      let score = 0;
-      
-      // Match exato na categoria (peso 100) - MAIOR PRIORIDADE
-      if (prompt.category && prompt.category.toLowerCase() === query) {
-        score += 100;
-      }
-      // Match parcial na categoria (peso 80)
-      else if (prompt.category && prompt.category.toLowerCase().includes(query)) {
-        score += 80;
-      }
-      
-      // Match exato no título (peso 60)
-      if (prompt.title && prompt.title.toLowerCase() === query) {
-        score += 60;
-      }
-      // Match parcial no título (peso 40)
-      else if (prompt.title && prompt.title.toLowerCase().includes(query)) {
-        score += 40;
-      }
-      
-      // Match em tags específicas (peso 50)
-      const allTags = [
-        ...(prompt.tags || []),
-        ...(prompt.keywords || []),
-        ...(prompt.styleTags || []),
-        ...(prompt.subjectTags || [])
-      ];
-      
-      const hasExactTagMatch = allTags.some(tag => 
-        tag && tag.toLowerCase() === query
-      );
-      if (hasExactTagMatch) {
-        score += 50;
-      }
-      
-      const hasPartialTagMatch = allTags.some(tag => 
-        tag && tag.toLowerCase().includes(query)
-      );
-      if (hasPartialTagMatch && !hasExactTagMatch) {
-        score += 30;
-      }
-      
-      // Match no conteúdo (peso 20) - MENOR PRIORIDADE
-      if (prompt.content && prompt.content.toLowerCase().includes(query)) {
-        score += 20;
-      }
-      
-      // Match de múltiplas palavras (todas devem estar presentes)
-      if (queryWords.length > 1) {
-        const allWordsMatch = queryWords.every(word => {
-          const wordLower = word.toLowerCase();
-          return (
-            (prompt.title && prompt.title.toLowerCase().includes(wordLower)) ||
-            (prompt.category && prompt.category.toLowerCase().includes(wordLower)) ||
-            (prompt.content && prompt.content.toLowerCase().includes(wordLower)) ||
-            allTags.some(tag => tag && tag.toLowerCase().includes(wordLower))
-          );
-        });
         
-        if (allWordsMatch) {
-          score += 15;
+        // Threshold mínimo de relevância: 30 pontos
+        const passesFilters = matchesCategory && matchesMinNumber;
+        const finalScore = passesFilters && score >= 30 ? score : 0;
+        
+        return { prompt, score: finalScore };
+      })
+      .filter(item => item.score > 0)
+      // Ordenar por relevância quando há busca ativa
+      .sort((a, b) => {
+        if (debouncedSearchQuery) {
+          return b.score - a.score; // Maior score primeiro
         }
-      }
-      
-      // Aplicar outros filtros
-      const matchesCategory = selectedCategory === 'all' || 
-                             (prompt.category && prompt.category.toLowerCase() === selectedCategory);
-      const matchesMinNumber = !minNumber || (typeof prompt.number === 'number' && prompt.number >= Number(minNumber));
-      
-      // Só retorna se tiver score > 0 e passar nos outros filtros
-      return score > 0 && matchesCategory && matchesMinNumber;
-    });
+        return 0; // Mantém ordem original se não houver busca
+      })
+      .map(item => item.prompt);
     
     // Deduplicação defensiva final por ID
     const deduped = new Map<string, Prompt>();
